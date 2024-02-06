@@ -11,6 +11,8 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
+class AItem;
+class AWeapon;
 
 UCLASS()
 class PROJECTDARK_API APlayerCharacter : public ACharacter
@@ -20,6 +22,10 @@ class PROJECTDARK_API APlayerCharacter : public ACharacter
 public:
 	APlayerCharacter();
 
+	virtual void Tick(float DeltaTime) override;
+
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputMappingContext* InputMappingContext;
 
@@ -28,6 +34,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* LookAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* EPressedAction;
 
 protected:
 	virtual void BeginPlay() override;
@@ -42,10 +51,15 @@ private:
 
 	void Move(const FInputActionValue& value);
 	void Look(const FInputActionValue& value);
+	void EKeyPressed(const FInputActionValue& value);
+
+	UPROPERTY(VisibleInstanceOnly)
+	AItem* OverlappingItem;
+
+	UPROPERTY(VisibleInstanceOnly)
+	AWeapon* EquippedWeapon;
 
 public:	
-	virtual void Tick(float DeltaTime) override;
-
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 
 };
