@@ -9,6 +9,8 @@
 #include "InputAction.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Item.h"
+#include "Weapon.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -78,6 +80,21 @@ void APlayerCharacter::Look(const FInputActionValue& value)
 	}
 }
 
+void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
+{
+
+	if (EquippedWeapon == nullptr)
+	{
+		EquippedWeapon = Cast<AWeapon>(OverlappingItem);
+	}
+
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->Equip(GetMesh(), FName("RightHandSocket"));
+	}
+
+}
+
 // Called every frame
 void APlayerCharacter::Tick(float DeltaTime)
 {
@@ -97,7 +114,16 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		if (MoveAction)
 		{
 			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Move);
+		}
+
+		if (LookAction)
+		{
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Look);
+		}
+
+		if (EPressedAction)
+		{
+			EnhancedInputComponent->BindAction(EPressedAction, ETriggerEvent::Triggered, this, &APlayerCharacter::EKeyPressed);
 		}
 	}
 
