@@ -4,9 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "CharacterTypes.h"
 #include "AnimInstancePaladin.generated.h"
 
 class UCharacterMovementComponent;
+class APlayerCharacter;
 /**
  * 
  */
@@ -24,6 +26,12 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	bool IsFalling;
+
+	UPROPERTY(BlueprintReadOnly)
+	APlayerCharacter* PlayerCharacter;
+
+	UPROPERTY(BlueprintReadOnly)
+	ECharacterState CharacterState;
 
 private:
 

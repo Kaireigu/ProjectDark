@@ -11,6 +11,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Item.h"
 #include "Weapon.h"
+#include "Animation/AnimMontage.h"
+#include "Animation/AnimInstance.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -52,6 +54,27 @@ void APlayerCharacter::BeginPlay()
 	
 }
 
+void APlayerCharacter::SetCanCombo(bool CanCombo)
+{
+	bCanCombo = CanCombo;
+}
+
+void APlayerCharacter::AttackEnd()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (bComboActive)
+	{
+		bComboActive = false;
+
+	}
+	else
+	{
+		ActionState = EActionState::EAS_Unoccupied;
+		AnimInstance->StopAllMontages(0.25f);
+	}
+}
+
 void APlayerCharacter::Move(const FInputActionValue& value)
 {
 	const FVector2D Movement = value.Get<FVector2D>();
@@ -88,11 +111,33 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 		EquippedWeapon = Cast<AWeapon>(OverlappingItem);
 	}
 
-	if (EquippedWeapon)
+	if (EquippedWeapon && CharacterState == ECharacterState::ECS_Unequipped)
 	{
 		EquippedWeapon->Equip(GetMesh(), FName("RightHandSocket"));
+		CharacterState = ECharacterState::ECS_EquippedOneHanded;
 	}
 
+}
+
+void APlayerCharacter::Attack(const FInputActionValue& value)
+{
+	if (CharacterState == ECharacterState::ECS_Unequipped) { return; }
+
+	if (bCanCombo)
+	{
+		bComboActive = true;
+	}
+
+	if (ActionState == EActionState::EAS_Attacking) { return; }
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && AttackMontageOneHanded)
+	{
+		AnimInstance->Montage_Play(AttackMontageOneHanded);
+		AnimInstance->Montage_JumpToSection(FName("Attack1"), AttackMontageOneHanded);
+		ActionState = EActionState::EAS_Attacking;
+	}
 }
 
 // Called every frame
@@ -124,6 +169,11 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		if (EPressedAction)
 		{
 			EnhancedInputComponent->BindAction(EPressedAction, ETriggerEvent::Triggered, this, &APlayerCharacter::EKeyPressed);
+		}
+
+		if (AttackAction)
+		{
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Attack);
 		}
 	}
 

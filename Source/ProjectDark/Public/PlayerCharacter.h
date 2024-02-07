@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "CharacterTypes.h"
 #include "PlayerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -13,6 +14,7 @@ class UInputMappingContext;
 class UInputAction;
 class AItem;
 class AWeapon;
+class UAnimMontage;
 
 UCLASS()
 class PROJECTDARK_API APlayerCharacter : public ACharacter
@@ -38,8 +40,26 @@ public:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* EPressedAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* AttackAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* AttackMontageOneHanded;
+
 protected:
 	virtual void BeginPlay() override;
+
+	UFUNCTION(BlueprintCallable)
+	void SetCanCombo(bool CanCombo);
+
+	UFUNCTION(BlueprintCallable)
+	void AttackEnd();
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
+	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
+
+	UPROPERTY(VisibleInstanceOnly)
+	EActionState ActionState = EActionState::EAS_Unoccupied;
 
 private:
 
@@ -52,6 +72,7 @@ private:
 	void Move(const FInputActionValue& value);
 	void Look(const FInputActionValue& value);
 	void EKeyPressed(const FInputActionValue& value);
+	void Attack(const FInputActionValue& value);
 
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
@@ -59,7 +80,10 @@ private:
 	UPROPERTY(VisibleInstanceOnly)
 	AWeapon* EquippedWeapon;
 
+	bool bCanCombo = false;
+	bool bComboActive = false;
+
 public:	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
-
+	FORCEINLINE ECharacterState GetCharacterState() { return CharacterState; }
 };

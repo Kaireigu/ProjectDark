@@ -8,11 +8,11 @@
 
 void UAnimInstancePaladin::NativeInitializeAnimation()
 {
-	APlayerCharacter* PlayerChar = Cast<APlayerCharacter>(TryGetPawnOwner());
+	PlayerCharacter = Cast<APlayerCharacter>(TryGetPawnOwner());
 
-	if (PlayerChar)
+	if (PlayerCharacter)
 	{
-		PlayerMovementComponent = Cast<UCharacterMovementComponent>(PlayerChar->GetMovementComponent());
+		PlayerMovementComponent = Cast<UCharacterMovementComponent>(PlayerCharacter->GetMovementComponent());
 	}
 }
 
@@ -22,5 +22,10 @@ void UAnimInstancePaladin::NativeUpdateAnimation(float DeltaTime)
 	{
 		GroundSpeed = UKismetMathLibrary::VSizeXY(PlayerMovementComponent->Velocity);
 		IsFalling = PlayerMovementComponent->IsFalling();
+	}
+
+	if (PlayerCharacter)
+	{
+		CharacterState = PlayerCharacter->GetCharacterState();
 	}
 }
