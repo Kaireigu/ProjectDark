@@ -28,6 +28,9 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float OrientRotationRateYaw = 1080.f;
+
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputMappingContext* InputMappingContext;
 
@@ -43,8 +46,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* AttackAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* RollAction;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontageOneHanded;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* RollMontage;
 
 protected:
 	virtual void BeginPlay() override;
@@ -73,6 +82,7 @@ private:
 	void Look(const FInputActionValue& value);
 	void EKeyPressed(const FInputActionValue& value);
 	void Attack(const FInputActionValue& value);
+	void Roll(const FInputActionValue& value);
 
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
