@@ -20,7 +20,7 @@ public:
 
 	AWeapon();
 
-	void Equip(USceneComponent* InParent, const FName& InSocketName);
+	void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName);
 
 protected:
 

@@ -17,7 +17,7 @@ AWeapon::AWeapon()
 	EndBoxTraceLocation->SetupAttachment(GetRootComponent());
 }
 
-void AWeapon::Equip(USceneComponent* InParent, const FName& InSocketName)
+void AWeapon::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
 {
 	const FAttachmentTransformRules AttachmentRules = FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false);
 
