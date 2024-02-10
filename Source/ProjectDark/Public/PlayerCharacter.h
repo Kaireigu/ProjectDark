@@ -58,6 +58,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* BackStepMontage;
 
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* EquipMontage;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -69,6 +72,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void SetUnoccupied();
+
+	UFUNCTION(BlueprintCallable)
+	void SetWeaponSocketOnEquipping();
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
@@ -89,6 +95,8 @@ private:
 	void EKeyPressed(const FInputActionValue& value);
 	void Attack(const FInputActionValue& value);
 	void RollOrBackStep(const FInputActionValue& value);
+
+	bool IsMoving();
 
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;

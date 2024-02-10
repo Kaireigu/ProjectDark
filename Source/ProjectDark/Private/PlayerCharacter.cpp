@@ -82,8 +82,24 @@ void APlayerCharacter::SetUnoccupied()
 	ActionState = EActionState::EAS_Unoccupied;
 }
 
+void APlayerCharacter::SetWeaponSocketOnEquipping()
+{
+	if (CharacterState == ECharacterState::ECS_Unequipped)
+	{
+		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+		CharacterState = ECharacterState::ECS_EquippedOneHanded;
+	}
+	else if (CharacterState == ECharacterState::ECS_EquippedOneHanded)
+	{
+		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
+		CharacterState = ECharacterState::ECS_Unequipped;
+	}
+}
+
 void APlayerCharacter::Move(const FInputActionValue& value)
 {
+	if (ActionState != EActionState::EAS_Unoccupied) { return; }
+
 	const FVector2D Movement = value.Get<FVector2D>();
 
 	if (Controller)
@@ -113,15 +129,34 @@ void APlayerCharacter::Look(const FInputActionValue& value)
 void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 {
 
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance)
+	{
+		if (EquippedWeapon && CharacterState == ECharacterState::ECS_Unequipped && ActionState == EActionState::EAS_Unoccupied && !IsMoving())
+		{
+
+			AnimInstance->Montage_Play(EquipMontage); // SetUnoccupied will call from an AnimNotify
+			AnimInstance->Montage_JumpToSection(FName("Equip"), EquipMontage);
+			ActionState = EActionState::EAS_Equipping;
+		}
+		else if (EquippedWeapon && CharacterState == ECharacterState::ECS_EquippedOneHanded && ActionState == EActionState::EAS_Unoccupied && !IsMoving())
+		{
+			AnimInstance->Montage_Play(EquipMontage);
+			AnimInstance->Montage_JumpToSection(FName("Unequip"), EquipMontage);
+			ActionState = EActionState::EAS_Equipping;
+		}
+	}
+
 	if (EquippedWeapon == nullptr)
 	{
 		EquippedWeapon = Cast<AWeapon>(OverlappingItem);
-	}
-
-	if (EquippedWeapon && CharacterState == ECharacterState::ECS_Unequipped)
-	{
-		EquippedWeapon->Equip(GetMesh(), FName("RightHandSocket"));
-		CharacterState = ECharacterState::ECS_EquippedOneHanded;
+		
+		if (EquippedWeapon)
+		{
+			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+			CharacterState = ECharacterState::ECS_EquippedOneHanded;
+		}
 	}
 
 }
@@ -155,14 +190,28 @@ void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
-	if (AnimInstance && RollMontage && UKismetMathLibrary::VSizeXY(GetCharacterMovement()->Velocity) > 0.f)
+	if (AnimInstance && RollMontage && IsMoving())
 	{
 		AnimInstance->Montage_Play(RollMontage);
 		AnimInstance->Montage_JumpToSection(FName("Roll1"), RollMontage);
 	}
-	else if (AnimInstance && BackStepMontage && UKismetMathLibrary::VSizeXY(GetCharacterMovement()->Velocity) == 0.f)
+	else if (AnimInstance && BackStepMontage && !IsMoving())
 	{
 		AnimInstance->Montage_Play(BackStepMontage);
+	}
+}
+
+bool APlayerCharacter::IsMoving()
+{
+	const double GroundSpeed = UKismetMathLibrary::VSizeXY(GetMovementComponent()->Velocity);
+
+	if (GroundSpeed > 0)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
 	}
 }
 
