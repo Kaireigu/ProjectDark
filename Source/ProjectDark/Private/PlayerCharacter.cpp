@@ -77,6 +77,11 @@ void APlayerCharacter::AttackEnd()
 	}
 }
 
+void APlayerCharacter::SetUnoccupied()
+{
+	ActionState = EActionState::EAS_Unoccupied;
+}
+
 void APlayerCharacter::Move(const FInputActionValue& value)
 {
 	const FVector2D Movement = value.Get<FVector2D>();
@@ -130,7 +135,7 @@ void APlayerCharacter::Attack(const FInputActionValue& value)
 		bComboActive = true;
 	}
 
-	if (ActionState == EActionState::EAS_Attacking) { return; }
+	if (ActionState != EActionState::EAS_Unoccupied) { return; }
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
@@ -142,14 +147,22 @@ void APlayerCharacter::Attack(const FInputActionValue& value)
 	}
 }
 
-void APlayerCharacter::Roll(const FInputActionValue& value)
+void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 {
+	if (ActionState != EActionState::EAS_Unoccupied) { return; }
+
+	ActionState = EActionState::EAS_Dodging;
+
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	if (AnimInstance && RollMontage && UKismetMathLibrary::VSizeXY(GetCharacterMovement()->Velocity) > 0.f)
 	{
 		AnimInstance->Montage_Play(RollMontage);
 		AnimInstance->Montage_JumpToSection(FName("Roll1"), RollMontage);
+	}
+	else if (AnimInstance && BackStepMontage && UKismetMathLibrary::VSizeXY(GetCharacterMovement()->Velocity) == 0.f)
+	{
+		AnimInstance->Montage_Play(BackStepMontage);
 	}
 }
 
@@ -189,10 +202,11 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Attack);
 		}
 
-		if (RollAction)
+		if (RollOrBackStepAction)
 		{
-			EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Roll);
+			EnhancedInputComponent->BindAction(RollOrBackStepAction, ETriggerEvent::Triggered, this, &APlayerCharacter::RollOrBackStep);
 		}
+
 	}
 
 }
