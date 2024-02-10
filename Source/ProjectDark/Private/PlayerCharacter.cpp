@@ -15,45 +15,36 @@
 #include "Animation/AnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
 
-// Sets default values
 APlayerCharacter::APlayerCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	bUseControllerRotationPitch = false;
-	bUseControllerRotationRoll = false;
-	bUseControllerRotationYaw = false;
+	SetDefaultControllerValues();
 
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.f, OrientRotationRateYaw, 0.f); // Setting Rotation Rate so player orients quicker.
-
-	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
-	CameraBoom->SetupAttachment(GetRootComponent());
-	CameraBoom->bUsePawnControlRotation = true;
-
-	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	Camera->SetupAttachment(CameraBoom);
+	InitialiseComponents();
 
 }
 
-// Called when the game starts or when spawned
+void APlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+}
+
+void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	BindInputActions(PlayerInputComponent);
+
+}
+
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	InitialiseSubsystem();
 
-	if (PlayerController)
-	{
-		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
-
-		if (Subsystem)
-		{
-			Subsystem->AddMappingContext(InputMappingContext, 1);
-		}
-	}
-	
 }
 
 void APlayerCharacter::SetCanCombo(bool CanCombo)
@@ -84,15 +75,95 @@ void APlayerCharacter::SetUnoccupied()
 
 void APlayerCharacter::SetWeaponSocketOnEquipping()
 {
-	if (CharacterState == ECharacterState::ECS_Unequipped)
+	if (IsUnequipped())
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
 		CharacterState = ECharacterState::ECS_EquippedOneHanded;
 	}
-	else if (CharacterState == ECharacterState::ECS_EquippedOneHanded)
+	else if (IsEquippedWithOneHandedWeapon())
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
 		CharacterState = ECharacterState::ECS_Unequipped;
+	}
+}
+
+void APlayerCharacter::SetDefaultControllerValues()
+{
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationRoll = false;
+	bUseControllerRotationYaw = false;
+}
+
+void APlayerCharacter::InitialiseComponents()
+{
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->RotationRate = FRotator(0.f, OrientRotationRateYaw, 0.f); // Setting Rotation Rate so player orients quicker.
+
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
+	CameraBoom->SetupAttachment(GetRootComponent());
+	CameraBoom->bUsePawnControlRotation = true;
+
+	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	Camera->SetupAttachment(CameraBoom);
+}
+
+void APlayerCharacter::InitialiseSubsystem()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	if (PlayerController)
+	{
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+
+		if (Subsystem)
+		{
+			Subsystem->AddMappingContext(InputMappingContext, 1);
+		}
+	}
+}
+
+void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
+{
+	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+
+	if (EnhancedInputComponent)
+	{
+		if (MoveAction)
+		{
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Move);
+		}
+
+		if (LookAction)
+		{
+			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Look);
+		}
+
+		if (EPressedAction)
+		{
+			EnhancedInputComponent->BindAction(EPressedAction, ETriggerEvent::Triggered, this, &APlayerCharacter::EKeyPressed);
+		}
+
+		if (AttackAction)
+		{
+			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Attack);
+		}
+
+		if (RollOrBackStepAction)
+		{
+			EnhancedInputComponent->BindAction(RollOrBackStepAction, ETriggerEvent::Triggered, this, &APlayerCharacter::RollOrBackStep);
+		}
+
+	}
+}
+
+void APlayerCharacter::PlayMontage(UAnimMontage* Montage, const FName& SectionName)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && Montage)
+	{
+		AnimInstance->Montage_Play(Montage);
+		AnimInstance->Montage_JumpToSection(SectionName, Montage);
 	}
 }
 
@@ -129,29 +200,21 @@ void APlayerCharacter::Look(const FInputActionValue& value)
 void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 {
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-	if (AnimInstance)
+	if (CanEquip())
 	{
-		if (EquippedWeapon && CharacterState == ECharacterState::ECS_Unequipped && ActionState == EActionState::EAS_Unoccupied && !IsMoving())
-		{
-
-			AnimInstance->Montage_Play(EquipMontage); // SetUnoccupied will call from an AnimNotify
-			AnimInstance->Montage_JumpToSection(FName("Equip"), EquipMontage);
-			ActionState = EActionState::EAS_Equipping;
-		}
-		else if (EquippedWeapon && CharacterState == ECharacterState::ECS_EquippedOneHanded && ActionState == EActionState::EAS_Unoccupied && !IsMoving())
-		{
-			AnimInstance->Montage_Play(EquipMontage);
-			AnimInstance->Montage_JumpToSection(FName("Unequip"), EquipMontage);
-			ActionState = EActionState::EAS_Equipping;
-		}
+		PlayMontage(EquipMontage, FName("Equip"));
+		ActionState = EActionState::EAS_Equipping; // SetUnoccupied will call from an AnimNotify
+	}
+	else if (CanUnequip())
+	{
+		PlayMontage(EquipMontage, FName("Unequip"));
+		ActionState = EActionState::EAS_Equipping;
 	}
 
 	if (EquippedWeapon == nullptr)
 	{
 		EquippedWeapon = Cast<AWeapon>(OverlappingItem);
-		
+
 		if (EquippedWeapon)
 		{
 			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
@@ -163,42 +226,53 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 
 void APlayerCharacter::Attack(const FInputActionValue& value)
 {
-	if (CharacterState == ECharacterState::ECS_Unequipped) { return; }
+	if (IsUnequipped()) { return; }
 
 	if (bCanCombo)
 	{
 		bComboActive = true;
 	}
 
-	if (ActionState != EActionState::EAS_Unoccupied) { return; }
+	if (IsOccupied()) { return; }
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-	if (AnimInstance && AttackMontageOneHanded)
-	{
-		AnimInstance->Montage_Play(AttackMontageOneHanded);
-		AnimInstance->Montage_JumpToSection(FName("Attack1"), AttackMontageOneHanded);
-		ActionState = EActionState::EAS_Attacking;
-	}
+	PlayMontage(AttackMontageOneHanded, FName("Attack1"));
+	ActionState = EActionState::EAS_Attacking;
 }
 
 void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 {
-	if (ActionState != EActionState::EAS_Unoccupied) { return; }
+	if (IsOccupied()) { return; }
 
 	ActionState = EActionState::EAS_Dodging;
 
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (IsMoving())
+	{
+		PlayMontage(RollMontage, FName("Roll1"));
+	}
+	else if (IsNotMoving())
+	{
+		PlayMontage(BackStepMontage, FName("Default"));
+	}
+}
 
-	if (AnimInstance && RollMontage && IsMoving())
-	{
-		AnimInstance->Montage_Play(RollMontage);
-		AnimInstance->Montage_JumpToSection(FName("Roll1"), RollMontage);
-	}
-	else if (AnimInstance && BackStepMontage && !IsMoving())
-	{
-		AnimInstance->Montage_Play(BackStepMontage);
-	}
+bool APlayerCharacter::IsOccupied()
+{
+	return ActionState != EActionState::EAS_Unoccupied;
+}
+
+bool APlayerCharacter::IsUnoccupied()
+{
+	return ActionState == EActionState::EAS_Unoccupied;
+}
+
+bool APlayerCharacter::CanEquip()
+{
+	return EquippedWeapon && IsUnequipped() && IsUnoccupied() && !IsMoving();
+}
+
+bool APlayerCharacter::CanUnequip()
+{
+	return EquippedWeapon && IsEquippedWithOneHandedWeapon() && IsUnoccupied() && !IsMoving();
 }
 
 bool APlayerCharacter::IsMoving()
@@ -215,48 +289,28 @@ bool APlayerCharacter::IsMoving()
 	}
 }
 
-// Called every frame
-void APlayerCharacter::Tick(float DeltaTime)
+bool APlayerCharacter::IsNotMoving()
 {
-	Super::Tick(DeltaTime);
+	const double GroundSpeed = UKismetMathLibrary::VSizeXY(GetMovementComponent()->Velocity);
 
-}
-
-// Called to bind functionality to input
-void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-
-	if (EnhancedInputComponent)
+	if (GroundSpeed > 0)
 	{
-		if (MoveAction)
-		{
-			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Move);
-		}
-
-		if (LookAction)
-		{
-			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Look);
-		}
-
-		if (EPressedAction)
-		{
-			EnhancedInputComponent->BindAction(EPressedAction, ETriggerEvent::Triggered, this, &APlayerCharacter::EKeyPressed);
-		}
-
-		if (AttackAction)
-		{
-			EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Attack);
-		}
-
-		if (RollOrBackStepAction)
-		{
-			EnhancedInputComponent->BindAction(RollOrBackStepAction, ETriggerEvent::Triggered, this, &APlayerCharacter::RollOrBackStep);
-		}
-
+		return false;
 	}
-
+	else
+	{
+		return true;
+	}
 }
+
+bool APlayerCharacter::IsEquippedWithOneHandedWeapon()
+{
+	return CharacterState == ECharacterState::ECS_EquippedOneHanded;
+}
+
+bool APlayerCharacter::IsUnequipped()
+{
+	return CharacterState == ECharacterState::ECS_Unequipped;
+}
+
 

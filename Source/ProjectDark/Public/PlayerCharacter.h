@@ -28,6 +28,27 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+protected:
+	virtual void BeginPlay() override;
+
+	UFUNCTION(BlueprintCallable)
+	void SetCanCombo(bool CanCombo);
+
+	UFUNCTION(BlueprintCallable)
+	void AttackEnd();
+
+	UFUNCTION(BlueprintCallable)
+	void SetUnoccupied();
+
+	UFUNCTION(BlueprintCallable)
+	void SetWeaponSocketOnEquipping();
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
+	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
+
+	UPROPERTY(VisibleInstanceOnly)
+	EActionState ActionState = EActionState::EAS_Unoccupied;
+
 	UPROPERTY(EditAnywhere, Category = Movement)
 	float OrientRotationRateYaw = 1080.f;
 
@@ -61,34 +82,14 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* EquipMontage;
 
-protected:
-	virtual void BeginPlay() override;
-
-	UFUNCTION(BlueprintCallable)
-	void SetCanCombo(bool CanCombo);
-
-	UFUNCTION(BlueprintCallable)
-	void AttackEnd();
-
-	UFUNCTION(BlueprintCallable)
-	void SetUnoccupied();
-
-	UFUNCTION(BlueprintCallable)
-	void SetWeaponSocketOnEquipping();
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
-	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
-
-	UPROPERTY(VisibleInstanceOnly)
-	EActionState ActionState = EActionState::EAS_Unoccupied;
-
 private:
 
-	UPROPERTY(VisibleAnywhere)
-	USpringArmComponent* CameraBoom;
+	void SetDefaultControllerValues();
+	void InitialiseComponents();
+	void InitialiseSubsystem();
 
-	UPROPERTY(VisibleAnywhere)
-	UCameraComponent* Camera;
+	void BindInputActions(UInputComponent* PlayerInputComponent);
+	void PlayMontage(UAnimMontage* Montage, const FName& SectionName);
 
 	void Move(const FInputActionValue& value);
 	void Look(const FInputActionValue& value);
@@ -96,7 +97,17 @@ private:
 	void Attack(const FInputActionValue& value);
 	void RollOrBackStep(const FInputActionValue& value);
 
+	bool IsOccupied();
+	bool IsUnoccupied();
+	bool CanEquip();
+	bool CanUnequip();
 	bool IsMoving();
+	bool IsNotMoving();
+	bool IsEquippedWithOneHandedWeapon();
+	bool IsUnequipped();
+
+	bool bCanCombo = false;
+	bool bComboActive = false;
 
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
@@ -104,8 +115,11 @@ private:
 	UPROPERTY(VisibleInstanceOnly)
 	AWeapon* EquippedWeapon;
 
-	bool bCanCombo = false;
-	bool bComboActive = false;
+	UPROPERTY(VisibleAnywhere)
+	USpringArmComponent* CameraBoom;
+
+	UPROPERTY(VisibleAnywhere)
+	UCameraComponent* Camera;
 
 public:	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
