@@ -47,13 +47,16 @@ public:
 	UInputAction* AttackAction;
 
 	UPROPERTY(EditAnywhere, Category = Input)
-	UInputAction* RollAction;
+	UInputAction* RollOrBackStepAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontageOneHanded;
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* RollMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* BackStepMontage;
 
 protected:
 	virtual void BeginPlay() override;
@@ -63,6 +66,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void AttackEnd();
+
+	UFUNCTION(BlueprintCallable)
+	void SetUnoccupied();
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
@@ -82,7 +88,7 @@ private:
 	void Look(const FInputActionValue& value);
 	void EKeyPressed(const FInputActionValue& value);
 	void Attack(const FInputActionValue& value);
-	void Roll(const FInputActionValue& value);
+	void RollOrBackStep(const FInputActionValue& value);
 
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
