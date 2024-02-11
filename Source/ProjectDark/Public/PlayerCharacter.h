@@ -43,6 +43,12 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponSocketOnEquipping();
 
+	UFUNCTION(BlueprintCallable)
+	void EnableWeaponCollision();
+
+	UFUNCTION(BlueprintCallable)
+	void DisableWeaponCollision();
+
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
 

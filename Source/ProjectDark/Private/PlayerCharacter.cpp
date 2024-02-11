@@ -23,6 +23,8 @@ APlayerCharacter::APlayerCharacter()
 
 	InitialiseComponents();
 
+	Tags.AddUnique(FName("Hitable"));
+
 }
 
 void APlayerCharacter::Tick(float DeltaTime)
@@ -84,6 +86,22 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
 		CharacterState = ECharacterState::ECS_Unequipped;
+	}
+}
+
+void APlayerCharacter::EnableWeaponCollision()
+{
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->SetWeaponCollision(true);
+	}
+}
+
+void APlayerCharacter::DisableWeaponCollision()
+{
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->SetWeaponCollision(false);
 	}
 }
 
