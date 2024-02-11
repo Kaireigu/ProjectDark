@@ -4,17 +4,32 @@
 #include "Weapon.h"
 #include "Components/BoxComponent.h"
 #include "Components/SceneComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "HitInterface.h"
 
 AWeapon::AWeapon()
 {
 	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
-	BoxComponent->SetupAttachment(GetRootComponent());
+
+	if (BoxComponent)
+	{
+		BoxComponent->SetupAttachment(GetRootComponent());
+		BoxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 
 	StartBoxTraceLocation = CreateDefaultSubobject<USceneComponent>(TEXT("Start Trace Location"));
-	StartBoxTraceLocation->SetupAttachment(GetRootComponent());
+
+	if (StartBoxTraceLocation)
+	{
+		StartBoxTraceLocation->SetupAttachment(GetRootComponent());
+	}
 
 	EndBoxTraceLocation = CreateDefaultSubobject<USceneComponent>(TEXT("End Trace Location"));
-	EndBoxTraceLocation->SetupAttachment(GetRootComponent());
+
+	if (EndBoxTraceLocation)
+	{
+		EndBoxTraceLocation->SetupAttachment(GetRootComponent());
+	}
 }
 
 void AWeapon::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
@@ -33,8 +48,43 @@ void AWeapon::BeginPlay()
 
 void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (GEngine)
+
+	const FVector Start = StartBoxTraceLocation->GetComponentLocation();
+	const FVector End = EndBoxTraceLocation->GetComponentLocation();
+	const FVector HalfSize = FVector(5.f, 5.f, 5.f);
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.AddUnique(this);
+	FHitResult HitResult;
+
+	UKismetSystemLibrary::BoxTraceSingle(this, Start, End, HalfSize, GetActorRotation(), ETraceTypeQuery::TraceTypeQuery1, false, 
+		ActorsToIgnore, EDrawDebugTrace::None, HitResult, true);
+
+	if (HitResult.GetActor())
 	{
-		GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, FString("Overlapped With ") + OtherActor->GetName());
+
+		if (HitResult.GetActor()->ActorHasTag(FName("Hitable")))
+		{
+
+			IHitInterface* HittableActor = Cast<IHitInterface>(HitResult.GetActor());
+
+			HittableActor->GetHit(GetOwner()->GetActorLocation());
+
+			ActorsToIgnore.AddUnique(HitResult.GetActor());
+		}
+	}
+}
+
+void AWeapon::SetWeaponCollision(const bool& Collision)
+{
+	if (BoxComponent)
+	{
+		if (Collision)
+		{
+			BoxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		}
+		else
+		{
+			BoxComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
 	}
 }

@@ -14,6 +14,7 @@
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Components/CapsuleComponent.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -22,6 +23,8 @@ APlayerCharacter::APlayerCharacter()
 	SetDefaultControllerValues();
 
 	InitialiseComponents();
+
+	Tags.AddUnique(FName("Hitable"));
 
 }
 
@@ -84,6 +87,22 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
 		CharacterState = ECharacterState::ECS_Unequipped;
+	}
+}
+
+void APlayerCharacter::EnableWeaponCollision()
+{
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->SetWeaponCollision(true);
+	}
+}
+
+void APlayerCharacter::DisableWeaponCollision()
+{
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->SetWeaponCollision(false);
 	}
 }
 
@@ -218,6 +237,7 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 		if (EquippedWeapon)
 		{
 			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+			EquippedWeapon->SetOwner(this);
 			CharacterState = ECharacterState::ECS_EquippedOneHanded;
 		}
 	}
