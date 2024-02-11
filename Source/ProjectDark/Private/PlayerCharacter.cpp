@@ -14,6 +14,7 @@
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Components/CapsuleComponent.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -236,6 +237,7 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 		if (EquippedWeapon)
 		{
 			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+			EquippedWeapon->SetOwner(this);
 			CharacterState = ECharacterState::ECS_EquippedOneHanded;
 		}
 	}

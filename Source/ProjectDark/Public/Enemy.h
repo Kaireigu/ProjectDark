@@ -7,6 +7,8 @@
 #include "HitInterface.h"
 #include "Enemy.generated.h"
 
+class UAnimMontage;
+
 UCLASS()
 class PROJECTDARK_API AEnemy : public ACharacter, public IHitInterface
 {
@@ -16,10 +18,13 @@ public:
 	AEnemy();
 	virtual void Tick(float DeltaTime) override;
 
-	void GetHit() override;
+	void GetHit(const FVector& ImpactPoint) override;
 
 protected:
 	virtual void BeginPlay() override;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* HitReactMontage;
 
 private:
 
