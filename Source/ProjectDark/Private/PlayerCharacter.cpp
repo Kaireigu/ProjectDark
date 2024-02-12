@@ -15,6 +15,8 @@
 #include "Animation/AnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/CapsuleComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Components/BoxComponent.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -31,6 +33,8 @@ APlayerCharacter::APlayerCharacter()
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	UpdateLockOnTarget(DeltaTime);
 
 }
 
@@ -124,6 +128,15 @@ void APlayerCharacter::InitialiseComponents()
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(CameraBoom);
+
+	LockOnBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Lock On Box"));
+	LockOnBox->SetupAttachment(Camera);
+
+	StartTraceLocation = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
+	StartTraceLocation->SetupAttachment(Camera);
+
+	EndTraceLocation = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace End"));
+	EndTraceLocation->SetupAttachment(Camera);
 }
 
 void APlayerCharacter::InitialiseSubsystem()
@@ -172,6 +185,11 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 			EnhancedInputComponent->BindAction(RollOrBackStepAction, ETriggerEvent::Triggered, this, &APlayerCharacter::RollOrBackStep);
 		}
 
+		if (LockOnAction)
+		{
+			EnhancedInputComponent->BindAction(LockOnAction, ETriggerEvent::Triggered, this, &APlayerCharacter::LockOn);
+		}
+
 	}
 }
 
@@ -188,7 +206,7 @@ void APlayerCharacter::PlayMontage(UAnimMontage* Montage, const FName& SectionNa
 
 void APlayerCharacter::Move(const FInputActionValue& value)
 {
-	if (ActionState != EActionState::EAS_Unoccupied) { return; }
+	if (IsOccupied()) { return; }
 
 	const FVector2D Movement = value.Get<FVector2D>();
 
@@ -207,6 +225,8 @@ void APlayerCharacter::Move(const FInputActionValue& value)
 
 void APlayerCharacter::Look(const FInputActionValue& value)
 {
+	if (bIsLockingOn) { return; }
+
 	const FVector2D LookInput = value.Get<FVector2D>();
 
 	if (Controller)
@@ -272,6 +292,85 @@ void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 	else if (IsNotMoving())
 	{
 		PlayMontage(BackStepMontage, FName("Default"));
+	}
+}
+
+void APlayerCharacter::LockOn(const FInputActionValue& value)
+{
+	if (bIsLockingOn)
+	{
+		bIsLockingOn = false;
+		LockOnTargetPosition = FVector::ZeroVector;
+		GetCharacterMovement()->bOrientRotationToMovement = true;
+	}
+	else
+	{
+		bIsLockingOn = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+	}
+
+}
+
+void APlayerCharacter::LockOnBoxTrace()
+{
+	LockableEnemies.Empty();
+
+	const FVector Start = StartTraceLocation->GetComponentLocation();
+	const FVector End = EndTraceLocation->GetComponentLocation();
+	const FVector HalfSize = LockOnBox->GetUnscaledBoxExtent();
+
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.AddUnique(this);
+
+	TArray<FHitResult> BoxHits;
+
+	UKismetSystemLibrary::BoxTraceMulti(this, Start, End, HalfSize, GetControlRotation(), ETraceTypeQuery::TraceTypeQuery1, false, ActorsToIgnore,
+		EDrawDebugTrace::None, BoxHits, true);
+
+	for (int i = 0; i < BoxHits.Num(); i++)
+	{
+		if (BoxHits[i].GetActor()->ActorHasTag("Lockable"))
+		{
+			LockableEnemies.AddUnique(BoxHits[i].GetActor());
+		}
+	}
+
+}
+
+void APlayerCharacter::UpdateLockOnTarget(float& DeltaTime)
+{
+	if (bIsLockingOn)
+	{
+
+		LockOnBoxTrace();
+
+		if (!LockableEnemies.IsEmpty())
+		{
+			if (LockOnTargetPosition == FVector::ZeroVector)
+			{
+				LockOnTargetPosition = LockableEnemies[0]->GetActorLocation();
+
+				for (int i = 0; i < LockableEnemies.Num(); i++)
+				{
+					FVector EnemyLocationElement = LockableEnemies[i]->GetActorLocation();
+
+					if (UKismetMathLibrary::VSizeXY(EnemyLocationElement - GetActorLocation()) < UKismetMathLibrary::VSizeXY(LockOnTargetPosition - GetActorLocation()))
+					{
+						LockOnTargetPosition = EnemyLocationElement;
+						EnemyTarget = LockableEnemies[i];
+					}
+				}
+			}
+			LockOnTargetPosition = EnemyTarget->GetActorLocation();
+			const FVector EnemyLocation = UKismetMathLibrary::VLerp(LockOnTargetPosition, GetActorLocation(), DeltaTime);
+			const FVector RaisedCameraLocation = Camera->GetComponentLocation() + FVector(0.f, 0.f, CameraHeightLockedOn);
+			const FRotator CameraLookAtRotation = UKismetMathLibrary::FindLookAtRotation(RaisedCameraLocation, EnemyLocation);
+			const FRotator FaceEnemyRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), EnemyLocation);
+			SetActorRotation(FRotator(GetActorRotation().Pitch, FaceEnemyRotation.Yaw, GetActorRotation().Roll));
+			Controller->SetControlRotation(CameraLookAtRotation);
+
+		}
+
 	}
 }
 

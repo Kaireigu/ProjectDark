@@ -9,6 +9,7 @@ AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	Tags.AddUnique(FName("Hitable"));
+	Tags.AddUnique(FName("Lockable"));
 
 	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
