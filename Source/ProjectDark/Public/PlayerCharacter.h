@@ -80,6 +80,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* LockOnAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* SwitchLockedTargetAction;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontageOneHanded;
 
@@ -116,9 +119,13 @@ private:
 	void Attack(const FInputActionValue& value);
 	void RollOrBackStep(const FInputActionValue& value);
 	void LockOn(const FInputActionValue& value);
+	void SwitchLockOnTarget(const FInputActionValue& value);
 
 	void LockOnBoxTrace();
 	void UpdateLockOnTarget(float& DeltaTime);
+	void LookAtCurrentTarget(float& DeltaTime);
+	void DetermineLeftAndRightTargets();
+	void DetermineFirstLockOnTarget();
 
 	bool IsOccupied();
 	bool IsUnoccupied();
@@ -132,12 +139,19 @@ private:
 	bool bCanCombo = false;
 	bool bComboActive = false;
 	bool bIsLockingOn = false;
+	bool bIsFirstTimeLockingOn = true;
 
 	UPROPERTY(VisibleInstanceOnly)
 	TArray<AActor*> LockableEnemies;
 
 	UPROPERTY()
-	AActor* EnemyTarget;
+	AActor* CurrentEnemyTarget;
+
+	UPROPERTY()
+	AActor* EnemyTargetRight;
+
+	UPROPERTY()
+	AActor* EnemyTargetLeft;
 
 	FVector LockOnTargetPosition = FVector::ZeroVector;
 
