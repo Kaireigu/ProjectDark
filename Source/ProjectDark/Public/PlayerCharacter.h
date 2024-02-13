@@ -15,6 +15,7 @@ class UInputAction;
 class AItem;
 class AWeapon;
 class UAnimMontage;
+class UBoxComponent;
 
 UCLASS()
 class PROJECTDARK_API APlayerCharacter : public ACharacter
@@ -76,6 +77,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* RollOrBackStepAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* LockOnAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* SwitchLockedTargetAction;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontageOneHanded;
 
@@ -87,6 +94,15 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* EquipMontage;
+
+	UPROPERTY(EditAnywhere, Category = Components)
+	UBoxComponent* LockOnBox;
+
+	UPROPERTY(EditAnywhere, Category = Components)
+	USceneComponent* StartTraceLocation;
+
+	UPROPERTY(EditAnywhere, Category = Components)
+	USceneComponent* EndTraceLocation;
 
 private:
 
@@ -102,6 +118,14 @@ private:
 	void EKeyPressed(const FInputActionValue& value);
 	void Attack(const FInputActionValue& value);
 	void RollOrBackStep(const FInputActionValue& value);
+	void LockOn(const FInputActionValue& value);
+	void SwitchLockOnTarget(const FInputActionValue& value);
+
+	void LockOnBoxTrace();
+	void UpdateLockOnTarget(float& DeltaTime);
+	void LookAtCurrentTarget(float& DeltaTime);
+	void DetermineLeftAndRightTargets();
+	void DetermineFirstLockOnTarget();
 
 	bool IsOccupied();
 	bool IsUnoccupied();
@@ -114,6 +138,22 @@ private:
 
 	bool bCanCombo = false;
 	bool bComboActive = false;
+	bool bIsLockingOn = false;
+	bool bIsFirstTimeLockingOn = true;
+
+	UPROPERTY(VisibleInstanceOnly)
+	TArray<AActor*> LockableEnemies;
+
+	UPROPERTY()
+	AActor* CurrentEnemyTarget;
+
+	UPROPERTY()
+	AActor* EnemyTargetRight;
+
+	UPROPERTY()
+	AActor* EnemyTargetLeft;
+
+	FVector LockOnTargetPosition = FVector::ZeroVector;
 
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
@@ -126,6 +166,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* Camera;
+
+	UPROPERTY(EditAnywhere, Category = Camera)
+	float CameraHeightLockedOn = 75.f;
 
 public:	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
