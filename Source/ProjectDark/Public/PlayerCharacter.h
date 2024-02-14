@@ -104,6 +104,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Components)
 	USceneComponent* EndTraceLocation;
 
+	UPROPERTY(EditAnywhere, Category = Camera)
+	float CameraHeightLockedOn = 50.f;
+
+	UPROPERTY(EditAnywhere, Category = Camera)
+	float LockOffDistance = 2000.f;
+
 private:
 
 	void SetDefaultControllerValues();
@@ -121,11 +127,21 @@ private:
 	void LockOn(const FInputActionValue& value);
 	void SwitchLockOnTarget(const FInputActionValue& value);
 
+	UFUNCTION()
+	void OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnLockBoxEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 	void LockOnBoxTrace();
 	void UpdateLockOnTarget(float& DeltaTime);
 	void LookAtCurrentTarget(float& DeltaTime);
 	void DetermineLeftAndRightTargets();
 	void DetermineFirstLockOnTarget();
+	void CheckLockOnTargetDistance();
+	void SetLockOffValues();
+
+	double GetTheta(const FVector& Forward, const FVector& OtherActorLocation);
 
 	bool IsOccupied();
 	bool IsUnoccupied();
@@ -166,9 +182,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* Camera;
-
-	UPROPERTY(EditAnywhere, Category = Camera)
-	float CameraHeightLockedOn = 75.f;
 
 public:	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
