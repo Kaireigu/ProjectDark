@@ -52,6 +52,10 @@ void APlayerCharacter::BeginPlay()
 
 	InitialiseSubsystem();
 
+	LockOnBox->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnLockBoxBeginOverlap);
+	LockOnBox->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::OnLockBoxEndOverlap);
+
+
 }
 
 void APlayerCharacter::SetCanCombo(bool CanCombo)
@@ -304,12 +308,7 @@ void APlayerCharacter::LockOn(const FInputActionValue& value)
 {
 	if (bIsLockingOn)
 	{
-		bIsLockingOn = false;
-		bIsFirstTimeLockingOn = true;
-		CurrentEnemyTarget = nullptr;
-		EnemyTargetRight = nullptr;
-		EnemyTargetLeft = nullptr;
-		GetCharacterMovement()->bOrientRotationToMovement = true;
+		SetLockOffValues();
 	}
 	else
 	{
@@ -321,6 +320,8 @@ void APlayerCharacter::LockOn(const FInputActionValue& value)
 
 void APlayerCharacter::SwitchLockOnTarget(const FInputActionValue& value)
 {
+	if (IsOccupied()) { return; }
+
 	const float Input = value.Get<float>();
 
 	if (Input > 0.f && EnemyTargetRight)
@@ -333,28 +334,68 @@ void APlayerCharacter::SwitchLockOnTarget(const FInputActionValue& value)
 	}
 }
 
+void APlayerCharacter::OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor->ActorHasTag("Lockable"))
+	{
+		LockableEnemies.AddUnique(OtherActor);
+		GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, FString("Lockable actor added"));
+	}
+}
+
+void APlayerCharacter::OnLockBoxEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor->ActorHasTag("Lockable"))
+	{
+		LockableEnemies.Remove(OtherActor);
+		GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, FString("Lockable actor removed"));
+	}
+}
+
 void APlayerCharacter::LockOnBoxTrace()
 {
 	// Gets all the enemies within a trace and stores them in Lockable Enemies
-	LockableEnemies.Empty();
+	//LockableEnemies.Empty();
 
 	const FVector Start = StartTraceLocation->GetComponentLocation();
 	const FVector End = EndTraceLocation->GetComponentLocation();
-	const FVector HalfSize = LockOnBox->GetUnscaledBoxExtent();
+	const FVector HalfSize = FVector(LockOnBox->GetUnscaledBoxExtent());
 
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.AddUnique(this);
 
 	TArray<FHitResult> BoxHits;
 
+	UWorld* World = GetWorld();
+	FCollisionQueryParams QueryParams = FCollisionQueryParams();
+	QueryParams.AddIgnoredActor(this);
+	FCollisionResponseParams ResponseParams = FCollisionResponseParams();
+
 	UKismetSystemLibrary::BoxTraceMulti(this, Start, End, HalfSize, GetControlRotation(), ETraceTypeQuery::TraceTypeQuery1, false, ActorsToIgnore,
 		EDrawDebugTrace::None, BoxHits, true);
 
+	// From the BoxHits, do a line trace between the enemy and the player to determine if anything is between them. If there isn't, add the enemy as a lockable target
 	for (int i = 0; i < BoxHits.Num(); i++)
 	{
-		if (BoxHits[i].GetActor()->ActorHasTag("Lockable"))
+		if (BoxHits[i].GetActor()->ActorHasTag("Lockable") && World)
 		{
-			LockableEnemies.AddUnique(BoxHits[i].GetActor());
+			FHitResult LineTraceHit;
+			QueryParams.AddIgnoredActor(BoxHits[i].GetActor());
+			World->LineTraceSingleByChannel(LineTraceHit, BoxHits[i].GetActor()->GetActorLocation(), GetActorLocation(), ECollisionChannel::ECC_Visibility, QueryParams, ResponseParams);
+
+			if (!LineTraceHit.IsValidBlockingHit())
+			{
+				LockableEnemies.AddUnique(BoxHits[i].GetActor());
+			}
+			else
+			{
+				LockableEnemies.Remove(BoxHits[i].GetActor());
+			}
+
+			if (GEngine && LineTraceHit.IsValidBlockingHit())
+			{
+				GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, LineTraceHit.GetActor()->GetActorNameOrLabel());
+			}
 		}
 	}
 
@@ -369,23 +410,27 @@ void APlayerCharacter::UpdateLockOnTarget(float& DeltaTime)
 
 		if (!LockableEnemies.IsEmpty())
 		{
-			DetermineFirstLockOnTarget();
+			CheckLockOnTargetDistance();
 
-			DetermineLeftAndRightTargets();
+			if (bIsLockingOn)
+			{
+				DetermineFirstLockOnTarget();
 
-			LookAtCurrentTarget(DeltaTime);
+				DetermineLeftAndRightTargets();
+
+				LookAtCurrentTarget(DeltaTime);
+			}
 
 		}
 		else
 		{
-			bIsLockingOn = false;
+			SetLockOffValues();
 		}
 
 	}
 	else if (bIsLockingOn == false)
 	{
-		bIsFirstTimeLockingOn = true;
-		GetCharacterMovement()->bOrientRotationToMovement = true;
+		SetLockOffValues();
 	}
 }
 
@@ -395,11 +440,12 @@ void APlayerCharacter::LookAtCurrentTarget(float& DeltaTime)
 	{
 		LockOnTargetPosition = CurrentEnemyTarget->GetActorLocation();
 		const FVector EnemyLocation = UKismetMathLibrary::VLerp(LockOnTargetPosition, GetActorLocation(), DeltaTime);
+		const FVector RaisedEnemyLocation = FVector(EnemyLocation.X, EnemyLocation.Y, EnemyLocation.Z + 10.f);
 		const FVector RaisedCameraLocation = Camera->GetComponentLocation() + FVector(0.f, 0.f, CameraHeightLockedOn);
-		const FRotator CameraLookAtRotation = UKismetMathLibrary::FindLookAtRotation(RaisedCameraLocation, EnemyLocation);
+		const FRotator CameraLookAtRotation = UKismetMathLibrary::FindLookAtRotation(RaisedCameraLocation, RaisedEnemyLocation);
 		const FRotator FaceEnemyRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), EnemyLocation);
-		SetActorRotation(FRotator(GetActorRotation().Pitch, FaceEnemyRotation.Yaw, GetActorRotation().Roll));
-		Controller->SetControlRotation(CameraLookAtRotation);
+		SetActorRotation(FRotator(GetActorRotation().Pitch, UKismetMathLibrary::Lerp(FaceEnemyRotation.Yaw, GetActorRotation().Yaw, DeltaTime), GetActorRotation().Roll));
+		Controller->SetControlRotation(UKismetMathLibrary::RLerp(CameraLookAtRotation, GetControlRotation(), DeltaTime, true));
 	}
 }
 
@@ -417,21 +463,8 @@ void APlayerCharacter::DetermineLeftAndRightTargets()
 		{
 			if (LockableEnemies[i] != CurrentEnemyTarget)
 			{
-				const FVector EnemyLocation = LockableEnemies[i]->GetActorLocation();
-				const FVector EnemyLocationLowered = FVector(EnemyLocation.X, EnemyLocation.Y, GetActorLocation().Z);
-				const FVector Forward = GetActorForwardVector();
-				const FVector ToEnemy = (EnemyLocationLowered - GetActorLocation()).GetSafeNormal();
 
-				const double CosTheta = FVector::DotProduct(Forward, ToEnemy);
-				double Theta = UKismetMathLibrary::Acos(CosTheta);
-				Theta = UKismetMathLibrary::RadiansToDegrees(Theta);
-
-				const FVector CrossProduct = FVector::CrossProduct(Forward, ToEnemy);
-
-				if (CrossProduct.Z < 0)
-				{
-					Theta *= -1.f;
-				}
+				double Theta = GetTheta(GetActorForwardVector(), LockableEnemies[i]->GetActorLocation());
 
 				if (Theta > 0.f)
 				{
@@ -474,6 +507,60 @@ void APlayerCharacter::DetermineFirstLockOnTarget()
 			}
 		}
 	}
+}
+
+void APlayerCharacter::CheckLockOnTargetDistance()
+{
+	if (CurrentEnemyTarget && UKismetMathLibrary::VSizeXY(CurrentEnemyTarget->GetActorLocation() - GetActorLocation()) > LockOffDistance)
+	{
+		SetLockOffValues();
+	}
+	
+	if (EnemyTargetLeft && UKismetMathLibrary::VSizeXY(EnemyTargetLeft->GetActorLocation() - GetActorLocation()) > 500.f && GetTheta(GetActorForwardVector(), EnemyTargetLeft->GetActorLocation()) > 135.f
+		|| EnemyTargetLeft && UKismetMathLibrary::VSizeXY(EnemyTargetLeft->GetActorLocation() - GetActorLocation()) > 500.f && GetTheta(GetActorForwardVector(), EnemyTargetLeft->GetActorLocation()) < -135.f)
+	{
+		LockableEnemies.Remove(EnemyTargetLeft);
+		EnemyTargetLeft = nullptr;
+	}
+
+	if (EnemyTargetRight && UKismetMathLibrary::VSizeXY(EnemyTargetRight->GetActorLocation() - GetActorLocation()) > 500.f && GetTheta(GetActorForwardVector(), EnemyTargetRight->GetActorLocation()) > 135.f
+		|| EnemyTargetRight && UKismetMathLibrary::VSizeXY(EnemyTargetRight->GetActorLocation() - GetActorLocation()) > 500.f && GetTheta(GetActorForwardVector(), EnemyTargetRight->GetActorLocation()) < -135.f)
+	{
+		LockableEnemies.Remove(EnemyTargetRight);
+		EnemyTargetRight = nullptr;
+	}
+}
+
+void APlayerCharacter::SetLockOffValues()
+{
+	bIsLockingOn = false;
+	bIsFirstTimeLockingOn = true;
+	CurrentEnemyTarget = nullptr;
+	EnemyTargetRight = nullptr;
+	EnemyTargetLeft = nullptr;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	LockableEnemies.Empty();
+}
+
+double APlayerCharacter::GetTheta(const FVector& Forward, const FVector& OtherActorLocation)
+{
+	const FVector EnemyLocation = OtherActorLocation;
+	const FVector EnemyLocationLowered = FVector(EnemyLocation.X, EnemyLocation.Y, GetActorLocation().Z);
+	const FVector ForwardVector = Forward;
+	const FVector ToEnemy = (EnemyLocationLowered - GetActorLocation()).GetSafeNormal();
+
+	const double CosTheta = FVector::DotProduct(Forward, ToEnemy);
+	double Theta = UKismetMathLibrary::Acos(CosTheta);
+	Theta = UKismetMathLibrary::RadiansToDegrees(Theta);
+
+	const FVector CrossProduct = FVector::CrossProduct(Forward, ToEnemy);
+
+	if (CrossProduct.Z < 0)
+	{
+		Theta *= -1.f;
+	}
+
+	return Theta;
 }
 
 bool APlayerCharacter::IsOccupied()
