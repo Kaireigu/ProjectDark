@@ -4,12 +4,25 @@
 #include "Enemy.h"
 #include "Components/CapsuleComponent.h"
 #include "Animation/AnimMontage.h"
+#include "AIController.h"
+#include "AITypes.h"
+#include "Navigation/PathFollowingComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Perception/PawnSensingComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	Tags.AddUnique(FName("Hitable"));
 	Tags.AddUnique(FName("Lockable"));
+
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	PawnSensingComponent = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("Pawn Sensing Component"));
+	PawnSensingComponent->SightRadius = VisualRadius;
+	PawnSensingComponent->SetPeripheralVisionAngle(PeripheralVisionAngle);
+
 
 	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -23,6 +36,39 @@ void AEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UpdatePatrolTarget();
+
+}
+
+void AEnemy::UpdatePatrolTarget()
+{
+	if (PatrolTarget && EnemyController)
+	{
+		if (InTargetRange(PatrolTarget, AcceptanceRadius))
+		{
+			TArray<AActor*> ValidTargets;
+
+			for (AActor* Target : PatrolTargets)
+			{
+				if (Target != PatrolTarget)
+				{
+					ValidTargets.AddUnique(Target);
+				}
+			}
+
+			const int32 NumOfPatrolTargets = ValidTargets.Num();
+
+			if (NumOfPatrolTargets > 0)
+			{
+				const int32 TargetSelection = UKismetMathLibrary::RandomIntegerInRange(0, NumOfPatrolTargets - 1);
+
+				AActor* Target = ValidTargets[TargetSelection];
+				PatrolTarget = Target;
+
+				MoveToTarget(PatrolTarget);
+			}
+		}
+	}
 }
 
 void AEnemy::GetHit(const FVector& ImpactPoint)
@@ -79,5 +125,49 @@ void AEnemy::GetHit(const FVector& ImpactPoint)
 void AEnemy::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (PawnSensingComponent)
+	{
+		PawnSensingComponent->OnSeePawn.AddDynamic(this, &AEnemy::PawnSeen);
+	}
+
+	EnemyController = Cast<AAIController>(GetController());
+
+	MoveToTarget(PatrolTarget);
 	
+}
+
+void AEnemy::PawnSeen(APawn* SeenPawn)
+{
+	if (EnemyState == EEnemyState::EES_Chasing) { return; }
+
+	if (SeenPawn->ActorHasTag("PlayerCharacter"))
+	{
+		GetCharacterMovement()->MaxWalkSpeed = 300.f;
+		CombatTarget = SeenPawn;
+
+		if (EnemyState != EEnemyState::EES_Attacking)
+		{
+			EnemyState = EEnemyState::EES_Chasing;
+			MoveToTarget(CombatTarget);
+		}
+
+	}
+}
+
+void AEnemy::MoveToTarget(AActor* Target)
+{
+	if (EnemyController == nullptr || Target == nullptr) { return; }
+
+	FAIMoveRequest MoveRequest;
+	MoveRequest.SetGoalActor(Target);
+	MoveRequest.SetAcceptanceRadius(TargetRadius);
+	EnemyController->MoveTo(MoveRequest);
+}
+
+bool AEnemy::InTargetRange(AActor* Target, const double& Radius)
+{
+	const double DistanceToTarget = (Target->GetActorLocation() - GetActorLocation()).Size();
+
+	return DistanceToTarget <= Radius;
 }

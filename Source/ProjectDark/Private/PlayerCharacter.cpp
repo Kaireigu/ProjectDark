@@ -27,6 +27,7 @@ APlayerCharacter::APlayerCharacter()
 	InitialiseComponents();
 
 	Tags.AddUnique(FName("Hitable"));
+	Tags.AddUnique(FName("PlayerCharacter"));
 
 }
 
