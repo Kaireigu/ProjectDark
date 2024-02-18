@@ -47,6 +47,14 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 }
 
+void APlayerCharacter::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
+{
+	
+	GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Red, FString("Hit and enemy has tag"));
+	Super::GetHit(OtherActor, ImpactPoint);
+
+}
+
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -99,22 +107,6 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 	}
 }
 
-void APlayerCharacter::EnableWeaponCollision()
-{
-	if (EquippedWeapon)
-	{
-		EquippedWeapon->SetWeaponCollision(true);
-	}
-}
-
-void APlayerCharacter::DisableWeaponCollision()
-{
-	if (EquippedWeapon)
-	{
-		EquippedWeapon->SetWeaponCollision(false);
-	}
-}
-
 void APlayerCharacter::SetDefaultControllerValues()
 {
 	bUseControllerRotationPitch = false;
@@ -133,6 +125,11 @@ void APlayerCharacter::InitialiseComponents()
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(CameraBoom);
+
+	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
+
+	GetMesh()->SetGenerateOverlapEvents(true);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
 	LockOnBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Lock On Box"));
 	LockOnBox->SetupAttachment(Camera);
@@ -200,17 +197,6 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 			EnhancedInputComponent->BindAction(SwitchLockedTargetAction, ETriggerEvent::Triggered, this, &APlayerCharacter::SwitchLockOnTarget);
 		}
 
-	}
-}
-
-void APlayerCharacter::PlayMontage(UAnimMontage* Montage, const FName& SectionName)
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-
-	if (AnimInstance && Montage)
-	{
-		AnimInstance->Montage_Play(Montage);
-		AnimInstance->Montage_JumpToSection(SectionName, Montage);
 	}
 }
 
@@ -541,27 +527,6 @@ void APlayerCharacter::SetLockOffValues()
 	EnemyTargetLeft = nullptr;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	LockableEnemies.Empty();
-}
-
-double APlayerCharacter::GetTheta(const FVector& Forward, const FVector& OtherActorLocation)
-{
-	const FVector EnemyLocation = OtherActorLocation;
-	const FVector EnemyLocationLowered = FVector(EnemyLocation.X, EnemyLocation.Y, GetActorLocation().Z);
-	const FVector ForwardVector = Forward;
-	const FVector ToEnemy = (EnemyLocationLowered - GetActorLocation()).GetSafeNormal();
-
-	const double CosTheta = FVector::DotProduct(Forward, ToEnemy);
-	double Theta = UKismetMathLibrary::Acos(CosTheta);
-	Theta = UKismetMathLibrary::RadiansToDegrees(Theta);
-
-	const FVector CrossProduct = FVector::CrossProduct(Forward, ToEnemy);
-
-	if (CrossProduct.Z < 0)
-	{
-		Theta *= -1.f;
-	}
-
-	return Theta;
 }
 
 bool APlayerCharacter::IsOccupied()

@@ -4,16 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "HitInterface.h"
+#include "BaseCharacter.h"
 #include "CharacterTypes.h"
 #include "Enemy.generated.h"
 
 class UAnimMontage;
 class AAIController;
 class UPawnSensingComponent;
+class AWeapon;
 
 UCLASS()
-class PROJECTDARK_API AEnemy : public ACharacter, public IHitInterface
+class PROJECTDARK_API AEnemy : public ABaseCharacter
 {
 	GENERATED_BODY()
 
@@ -23,13 +24,19 @@ public:
 
 	void UpdatePatrolTarget();
 
-	void GetHit(const FVector& ImpactPoint) override;
+	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
 
 protected:
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
 	void PawnSeen(APawn* SeenPawn);
+
+	UFUNCTION(BlueprintCallable)
+	void MontageEnd();
+
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TSubclassOf<AWeapon> WeaponClass;
 
 	UPROPERTY(VisibleInstanceOnly)
 	AActor* CombatTarget;
@@ -38,7 +45,7 @@ protected:
 	UPawnSensingComponent* PawnSensingComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
-	UAnimMontage* HitReactMontage;
+	UAnimMontage* AttackMontage;
 
 	UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
 	AActor* PatrolTarget;
@@ -48,6 +55,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "AI Navigation")
 	double TargetRadius = 15.f;
+
+	UPROPERTY(EditAnywhere, Category = "AI Navigation")
+	double AttackRadius = 150.f;
 
 	UPROPERTY(EditAnywhere, Category = "AI Navigation")
 	double AcceptanceRadius = 200.f;
@@ -65,6 +75,8 @@ protected:
 private:
 
 	void MoveToTarget(AActor* Target);
+	void CheckDistanceToCombatTarget();
+	void Attack();
 
 	bool InTargetRange(AActor* Target, const double& Radius);
 

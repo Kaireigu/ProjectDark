@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "CharacterTypes.h"
+#include "BaseCharacter.h"
 #include "PlayerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -18,7 +19,7 @@ class UAnimMontage;
 class UBoxComponent;
 
 UCLASS()
-class PROJECTDARK_API APlayerCharacter : public ACharacter
+class PROJECTDARK_API APlayerCharacter : public ABaseCharacter
 {
 	GENERATED_BODY()
 
@@ -28,6 +29,8 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -43,12 +46,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponSocketOnEquipping();
-
-	UFUNCTION(BlueprintCallable)
-	void EnableWeaponCollision();
-
-	UFUNCTION(BlueprintCallable)
-	void DisableWeaponCollision();
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
@@ -117,7 +114,6 @@ private:
 	void InitialiseSubsystem();
 
 	void BindInputActions(UInputComponent* PlayerInputComponent);
-	void PlayMontage(UAnimMontage* Montage, const FName& SectionName);
 
 	void Move(const FInputActionValue& value);
 	void Look(const FInputActionValue& value);
@@ -140,8 +136,6 @@ private:
 	void DetermineFirstLockOnTarget();
 	void CheckLockOnTargetDistance();
 	void SetLockOffValues();
-
-	double GetTheta(const FVector& Forward, const FVector& OtherActorLocation);
 
 	bool IsOccupied();
 	bool IsUnoccupied();
@@ -173,9 +167,6 @@ private:
 
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
-
-	UPROPERTY(VisibleInstanceOnly)
-	AWeapon* EquippedWeapon;
 
 	UPROPERTY(VisibleAnywhere)
 	USpringArmComponent* CameraBoom;
