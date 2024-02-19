@@ -9,6 +9,7 @@
 
 class UAnimMontage;
 class AWeapon;
+class UAttributes;
 
 UCLASS()
 class PROJECTDARK_API ABaseCharacter : public ACharacter, public IHitInterface
@@ -42,6 +43,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly)
 	AWeapon* EquippedWeapon;
+
+	UPROPERTY(VisibleAnywhere)
+	UAttributes* AttributeComponent;
 
 private:
 

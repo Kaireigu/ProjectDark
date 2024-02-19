@@ -11,6 +11,7 @@
 #include "Perception/PawnSensingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Weapon.h"
+#include "HealthBarComponent.h"
 
 AEnemy::AEnemy()
 {
@@ -25,6 +26,8 @@ AEnemy::AEnemy()
 	PawnSensingComponent->SightRadius = VisualRadius;
 	PawnSensingComponent->SetPeripheralVisionAngle(PeripheralVisionAngle);
 
+	HealthBarComponent = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar Component"));
+	HealthBarComponent->SetupAttachment(GetRootComponent());
 
 	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);

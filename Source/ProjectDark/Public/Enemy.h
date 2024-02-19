@@ -12,6 +12,7 @@ class UAnimMontage;
 class AAIController;
 class UPawnSensingComponent;
 class AWeapon;
+class UHealthBarComponent;
 
 UCLASS()
 class PROJECTDARK_API AEnemy : public ABaseCharacter
@@ -71,6 +72,8 @@ protected:
 	UPROPERTY()
 	AAIController* EnemyController;
 
+	UPROPERTY(VisibleAnywhere)
+	UHealthBarComponent* HealthBarComponent;
 
 private:
 

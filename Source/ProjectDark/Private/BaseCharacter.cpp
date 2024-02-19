@@ -6,11 +6,13 @@
 #include "Animation/AnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Weapon.h"
+#include "Attributes.h"
 
 ABaseCharacter::ABaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	AttributeComponent = CreateDefaultSubobject<UAttributes>(TEXT("Attribute Component"));
 }
 
 void ABaseCharacter::Tick(float DeltaTime)
