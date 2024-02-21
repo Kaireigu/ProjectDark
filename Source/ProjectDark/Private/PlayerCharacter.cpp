@@ -17,6 +17,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/BoxComponent.h"
+#include "Enemy.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -63,8 +64,6 @@ void APlayerCharacter::BeginPlay()
 
 	LockOnBox->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnLockBoxBeginOverlap);
 	LockOnBox->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::OnLockBoxEndOverlap);
-
-
 }
 
 void APlayerCharacter::SetCanCombo(bool CanCombo)
@@ -254,6 +253,7 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 		{
 			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
 			EquippedWeapon->SetOwner(this);
+			EquippedWeapon->SetInstigator(this);
 			CharacterState = ECharacterState::ECS_EquippedOneHanded;
 		}
 	}
@@ -314,10 +314,14 @@ void APlayerCharacter::SwitchLockOnTarget(const FInputActionValue& value)
 	if (Input > 0.f && EnemyTargetRight)
 	{
 		CurrentEnemyTarget = EnemyTargetRight;
+		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
+		IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
 	}
 	else if (Input < 0.f && EnemyTargetLeft)
 	{
 		CurrentEnemyTarget = EnemyTargetLeft;
+		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
+		IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
 	}
 }
 
@@ -379,10 +383,6 @@ void APlayerCharacter::LockOnBoxTrace()
 				LockableEnemies.Remove(BoxHits[i].GetActor());
 			}
 
-			if (GEngine && LineTraceHit.IsValidBlockingHit())
-			{
-				GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, LineTraceHit.GetActor()->GetActorNameOrLabel());
-			}
 		}
 	}
 
@@ -493,6 +493,13 @@ void APlayerCharacter::DetermineFirstLockOnTarget()
 				CurrentEnemyTarget = LockableEnemies[i];
 			}
 		}
+
+		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
+		
+		if (IsDeadEnemy)
+		{
+			IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
+		}
 	}
 }
 
@@ -527,6 +534,22 @@ void APlayerCharacter::SetLockOffValues()
 	EnemyTargetLeft = nullptr;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	LockableEnemies.Empty();
+
+	if (IsDeadEnemy)
+	{
+		IsDeadEnemy->EnemyDied.RemoveDynamic(this, &APlayerCharacter::OnEnemyDeath);
+	}
+	IsDeadEnemy = nullptr;
+}
+
+void APlayerCharacter::OnEnemyDeath(AActor* Enemy)
+{
+	GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Red, FString("Enemy Died"));
+	if (CurrentEnemyTarget == Enemy)
+	{
+		SetLockOffValues();
+		
+	}
 }
 
 bool APlayerCharacter::IsOccupied()

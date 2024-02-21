@@ -8,10 +8,13 @@
 #include "CharacterTypes.h"
 #include "Enemy.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDeath, AActor*, Enemy);
+
 class UAnimMontage;
 class AAIController;
 class UPawnSensingComponent;
 class AWeapon;
+class UHealthBarComponent;
 
 UCLASS()
 class PROJECTDARK_API AEnemy : public ABaseCharacter
@@ -25,9 +28,14 @@ public:
 	void UpdatePatrolTarget();
 
 	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
+	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+
+	FOnEnemyDeath EnemyDied;
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Die() override;
+	virtual void PlayHitReactMontage(const FVector& ImpactPoint) override;
 
 	UFUNCTION()
 	void PawnSeen(APawn* SeenPawn);
@@ -71,6 +79,8 @@ protected:
 	UPROPERTY()
 	AAIController* EnemyController;
 
+	UPROPERTY(VisibleAnywhere)
+	UHealthBarComponent* HealthBarComponent;
 
 private:
 

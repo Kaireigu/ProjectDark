@@ -11,6 +11,9 @@
 #include "Perception/PawnSensingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Weapon.h"
+#include "HealthBarComponent.h"
+#include "HealthBar.h"
+#include "Attributes.h"
 
 AEnemy::AEnemy()
 {
@@ -25,6 +28,8 @@ AEnemy::AEnemy()
 	PawnSensingComponent->SightRadius = VisualRadius;
 	PawnSensingComponent->SetPeripheralVisionAngle(PeripheralVisionAngle);
 
+	HealthBarComponent = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar Component"));
+	HealthBarComponent->SetupAttachment(GetRootComponent());
 
 	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -83,6 +88,25 @@ void AEnemy::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 
 }
 
+float AEnemy::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (AttributeComponent)
+	{
+		AttributeComponent->ReceiveDamage(DamageAmount);
+
+		if (HealthBarComponent)
+		{
+			HealthBarComponent->SetHealthPercent(AttributeComponent->GetHealthPercent());
+			if (AttributeComponent->GetHealthPercent() <= 0.f)
+			{
+				Die();
+			}
+		}
+	}
+
+	return DamageAmount;
+}
+
 
 void AEnemy::BeginPlay()
 {
@@ -98,19 +122,37 @@ void AEnemy::BeginPlay()
 		{
 			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("LeftArmSocket"));
 			EquippedWeapon->SetOwner(this);
+			EquippedWeapon->SetInstigator(this);
 			EquippedWeapon->SetActorHiddenInGame(true);
 		}
 	}
 
 	if (PawnSensingComponent)
 	{
-		PawnSensingComponent->OnSeePawn.AddDynamic(this, &AEnemy::PawnSeen);
+		PawnSensingComponent->OnSeePawn.AddUniqueDynamic(this, &AEnemy::PawnSeen);
 	}
 
 	EnemyController = Cast<AAIController>(GetController());
 
 	MoveToTarget(PatrolTarget);
 	
+}
+
+void AEnemy::Die()
+{
+	if (EnemyState == EEnemyState::EES_Dead) { return; }
+
+	Super::Die();
+	EnemyState = EEnemyState::EES_Dead;
+	EnemyDied.Broadcast(this);
+}
+
+void AEnemy::PlayHitReactMontage(const FVector& ImpactPoint)
+{
+	if (EnemyState != EEnemyState::EES_Dead)
+	{
+		Super::PlayHitReactMontage(ImpactPoint);
+	}
 }
 
 void AEnemy::PawnSeen(APawn* SeenPawn)

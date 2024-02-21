@@ -22,6 +22,8 @@ public:
 
 	void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName);
 
+	TArray<AActor*> IgnoredActors;
+
 protected:
 
 	void BeginPlay() override;
@@ -34,6 +36,9 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	USceneComponent* EndBoxTraceLocation;
+
+	UPROPERTY(EditAnywhere)
+	float WeaponDamage = 20.f;
 
 private:
 
