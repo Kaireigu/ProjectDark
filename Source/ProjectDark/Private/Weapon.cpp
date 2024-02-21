@@ -6,6 +6,7 @@
 #include "Components/SceneComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "HitInterface.h"
+#include "Kismet/GameplayStatics.h"
 
 AWeapon::AWeapon()
 {
@@ -57,6 +58,11 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 	ActorsToIgnore.AddUnique(GetOwner());
 	FHitResult HitResult;
 
+	for (AActor* Actor : IgnoredActors)
+	{
+		ActorsToIgnore.AddUnique(Actor);
+	}
+
 	UKismetSystemLibrary::BoxTraceSingle(this, Start, End, HalfSize, GetActorRotation(), ETraceTypeQuery::TraceTypeQuery1, false, 
 		ActorsToIgnore, EDrawDebugTrace::None, HitResult, true);
 
@@ -73,9 +79,11 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 				HittableActor->GetHit(GetOwner(), GetOwner()->GetActorLocation());
 			}
 
-			ActorsToIgnore.AddUnique(HitResult.GetActor());
+			UGameplayStatics::ApplyDamage(HitResult.GetActor(), WeaponDamage, GetInstigator()->GetController(), this, UDamageType::StaticClass());
+			IgnoredActors.AddUnique(HitResult.GetActor());
 		}
 	}
+
 }
 
 void AWeapon::SetWeaponCollision(const bool& Collision)

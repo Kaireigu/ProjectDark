@@ -17,6 +17,7 @@ class AItem;
 class AWeapon;
 class UAnimMontage;
 class UBoxComponent;
+class AEnemy;
 
 UCLASS()
 class PROJECTDARK_API APlayerCharacter : public ABaseCharacter
@@ -137,6 +138,9 @@ private:
 	void CheckLockOnTargetDistance();
 	void SetLockOffValues();
 
+	UFUNCTION()
+	void OnEnemyDeath(AActor* Enemy);
+
 	bool IsOccupied();
 	bool IsUnoccupied();
 	bool CanEquip();
@@ -162,6 +166,9 @@ private:
 
 	UPROPERTY()
 	AActor* EnemyTargetLeft;
+
+	UPROPERTY()
+	AEnemy* IsDeadEnemy;
 
 	FVector LockOnTargetPosition = FVector::ZeroVector;
 

@@ -7,6 +7,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Weapon.h"
 #include "Attributes.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Components/CapsuleComponent.h"
 
 ABaseCharacter::ABaseCharacter()
 {
@@ -99,11 +101,17 @@ double ABaseCharacter::GetTheta(const FVector& Forward, const FVector& OtherActo
 	return Theta;
 }
 
+void ABaseCharacter::Die()
+{
+	PlayMontage(DeathMontage, FName("Death1"));
+}
+
 void ABaseCharacter::EnableWeaponCollision()
 {
 	if (EquippedWeapon)
 	{
 		EquippedWeapon->SetWeaponCollision(true);
+		EquippedWeapon->IgnoredActors.Empty();
 	}
 }
 
@@ -113,5 +121,15 @@ void ABaseCharacter::DisableWeaponCollision()
 	{
 		EquippedWeapon->SetWeaponCollision(false);
 	}
+}
+
+void ABaseCharacter::SetDeathValues()
+{
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	GetMesh()->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCharacterMovement()->DisableMovement();
+	SetLifeSpan(5.f);
 }
 

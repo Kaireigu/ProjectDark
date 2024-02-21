@@ -3,8 +3,9 @@
 
 #include "HealthBarComponent.h"
 #include "HealthBar.h"
+#include "Components/ProgressBar.h"
 
-UHealthBarComponent::UHealthBarComponent()
+void UHealthBarComponent::SetHealthPercent(const float& Percent)
 {
 	if (HealthBarWidget == nullptr)
 	{
@@ -12,6 +13,6 @@ UHealthBarComponent::UHealthBarComponent()
 	}
 	if (HealthBarWidget && HealthBarWidget->HealthBar)
 	{
-		HealthBarWidget->SetHealthPercent(100.f);
+		HealthBarWidget->HealthBar->SetPercent(Percent);
 	}
 }

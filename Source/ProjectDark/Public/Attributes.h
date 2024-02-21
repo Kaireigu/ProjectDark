@@ -16,6 +16,8 @@ public:
 
 	UAttributes();
 
+	void ReceiveDamage(const float& Damage);
+
 protected:
 
 	// Current Health
@@ -31,6 +33,6 @@ private:
 
 public:	
 	FORCEINLINE bool IsAlive() { return Health > 0.f; }
-
+	FORCEINLINE float GetHealthPercent() { return Health / MaxHealth; }
 		
 };

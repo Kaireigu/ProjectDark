@@ -28,9 +28,11 @@ protected:
 	virtual void BeginPlay() override;
 
 	void PlayMontage(UAnimMontage* Montage, const FName& SectionName);
-	void PlayHitReactMontage(const FVector& ImpactPoint);
+	virtual void PlayHitReactMontage(const FVector& ImpactPoint);
 
 	double GetTheta(const FVector& Forward, const FVector& OtherActorLocation);
+
+	virtual void Die();
 
 	UFUNCTION(BlueprintCallable)
 	void EnableWeaponCollision();
@@ -38,8 +40,14 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void DisableWeaponCollision();
 
+	UFUNCTION(BlueprintCallable)
+	void SetDeathValues();
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* HitReactMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* DeathMontage;
 
 	UPROPERTY(VisibleInstanceOnly)
 	AWeapon* EquippedWeapon;

@@ -8,6 +8,10 @@ UAttributes::UAttributes()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
+}
 
+void UAttributes::ReceiveDamage(const float& Damage)
+{
+	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
 }
 

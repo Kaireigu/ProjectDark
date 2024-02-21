@@ -18,8 +18,6 @@ class PROJECTDARK_API UHealthBar : public UUserWidget
 
 public:
 
-	void SetHealthPercent(const float& Percent);
-
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthBar;
 	

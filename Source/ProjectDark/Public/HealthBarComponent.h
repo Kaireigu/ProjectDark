@@ -17,11 +17,11 @@ class PROJECTDARK_API UHealthBarComponent : public UWidgetComponent
 	GENERATED_BODY()
 
 public:
-	UHealthBarComponent();
 
-protected:
+	void SetHealthPercent(const float& Percent);
+
+private:
 
 	UPROPERTY()
 	UHealthBar* HealthBarWidget;
-	
 };
