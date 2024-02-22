@@ -26,6 +26,12 @@ protected:
 
 	UPROPERTY(EditInstanceOnly, Category = Attributes)
 	float MaxHealth = 100.f;
+
+	UPROPERTY(EditInstanceOnly, Category = Attributes)
+	float Stamina = 100.f;
+
+	UPROPERTY(EditInstanceOnly, Category = Attributes)
+	float MaxStamina = 100.f;
 	
 private:
 
@@ -34,5 +40,8 @@ private:
 public:	
 	FORCEINLINE bool IsAlive() { return Health > 0.f; }
 	FORCEINLINE float GetHealthPercent() { return Health / MaxHealth; }
+	FORCEINLINE float GetMaxHealth() { return MaxHealth; }
+	FORCEINLINE float GetStaminaPercent() { return Stamina / MaxStamina; }
+	FORCEINLINE float GetMaxStamina() { return MaxStamina; }
 		
 };
