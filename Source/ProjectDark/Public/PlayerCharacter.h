@@ -18,6 +18,7 @@ class AWeapon;
 class UAnimMontage;
 class UBoxComponent;
 class AEnemy;
+class UHUDOverlay;
 
 UCLASS()
 class PROJECTDARK_API APlayerCharacter : public ABaseCharacter
@@ -32,6 +33,8 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
+
+	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -180,6 +183,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* Camera;
+
+	UPROPERTY()
+	UHUDOverlay* HUDOverlay;
 
 public:	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }

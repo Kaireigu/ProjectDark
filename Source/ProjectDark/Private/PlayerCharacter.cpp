@@ -18,6 +18,9 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/BoxComponent.h"
 #include "Enemy.h"
+#include "HUDOverlay.h"
+#include "ProjectDarkHUD.h"
+#include "Attributes.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -56,6 +59,21 @@ void APlayerCharacter::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 
 }
 
+float APlayerCharacter::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	if (AttributeComponent)
+	{
+		AttributeComponent->ReceiveDamage(DamageAmount);
+
+		if (HUDOverlay)
+		{
+			HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
+		}
+	}
+
+	return DamageAmount;
+}
+
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -64,6 +82,24 @@ void APlayerCharacter::BeginPlay()
 
 	LockOnBox->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnLockBoxBeginOverlap);
 	LockOnBox->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::OnLockBoxEndOverlap);
+
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	if (PlayerController)
+	{
+		AProjectDarkHUD* ProjectDarkHUD = Cast<AProjectDarkHUD>(PlayerController->GetHUD());
+
+		if (ProjectDarkHUD)
+		{
+			HUDOverlay = ProjectDarkHUD->GetHUDOverlay();
+
+			if (HUDOverlay && AttributeComponent)
+			{
+				HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
+				HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
+			}
+		}
+	}
 }
 
 void APlayerCharacter::SetCanCombo(bool CanCombo)

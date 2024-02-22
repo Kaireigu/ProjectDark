@@ -157,7 +157,7 @@ void AEnemy::PlayHitReactMontage(const FVector& ImpactPoint)
 
 void AEnemy::PawnSeen(APawn* SeenPawn)
 {
-	if (EnemyState == EEnemyState::EES_Chasing) { return; }
+	if (EnemyState == EEnemyState::EES_Chasing || EnemyState == EEnemyState::EES_Dead) { return; }
 
 	
 	if (SeenPawn->ActorHasTag("PlayerCharacter"))
@@ -176,12 +176,14 @@ void AEnemy::PawnSeen(APawn* SeenPawn)
 
 void AEnemy::MontageEnd()
 {
+	if (EnemyState == EEnemyState::EES_Dead) { return; }
+
 	EnemyState = EEnemyState::EES_Chasing;
 }
 
 void AEnemy::MoveToTarget(AActor* Target)
 {
-	if (EnemyController == nullptr || Target == nullptr) { return; }
+	if (EnemyController == nullptr || Target == nullptr || EnemyState == EEnemyState::EES_Dead) { return; }
 
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(Target);
@@ -191,7 +193,7 @@ void AEnemy::MoveToTarget(AActor* Target)
 
 void AEnemy::CheckDistanceToCombatTarget()
 {
-	if (EnemyState == EEnemyState::EES_Attacking) { return; }
+	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead) { return; }
 
 	if (CombatTarget)
 	{
@@ -216,7 +218,7 @@ void AEnemy::CheckDistanceToCombatTarget()
 
 void AEnemy::Attack()
 {
-	if (EnemyState == EEnemyState::EES_Attacking) { return; }
+	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead) { return; }
 	
 	if (AttackMontage)
 	{
