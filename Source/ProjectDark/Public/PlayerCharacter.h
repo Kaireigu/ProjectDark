@@ -36,6 +36,9 @@ public:
 
 	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void CreateFields(const FVector& FieldLocation);
+
 protected:
 	virtual void BeginPlay() override;
 

@@ -24,6 +24,9 @@ public:
 
 	TArray<AActor*> IgnoredActors;
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void CreateFields(const FVector& FieldLocation);
+
 protected:
 
 	void BeginPlay() override;
