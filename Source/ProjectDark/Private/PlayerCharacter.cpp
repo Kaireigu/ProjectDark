@@ -54,7 +54,6 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 void APlayerCharacter::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 {
 	
-	GEngine->AddOnScreenDebugMessage(1, 1.f, FColor::Red, FString("Hit and enemy has tag"));
 	Super::GetHit(OtherActor, ImpactPoint);
 
 }
@@ -162,9 +161,11 @@ void APlayerCharacter::InitialiseComponents()
 	Camera->SetupAttachment(CameraBoom);
 
 	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
+	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
 
 	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	//GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
 
 	LockOnBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Lock On Box"));
 	LockOnBox->SetupAttachment(Camera);
@@ -320,6 +321,7 @@ void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 	if (IsMoving())
 	{
 		PlayMontage(RollMontage, FName("Roll1"));
+		CreateFields(GetActorLocation());
 	}
 	else if (IsNotMoving())
 	{
@@ -366,7 +368,6 @@ void APlayerCharacter::OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComp
 	if (OtherActor->ActorHasTag("Lockable"))
 	{
 		LockableEnemies.AddUnique(OtherActor);
-		GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, FString("Lockable actor added"));
 	}
 }
 
@@ -375,7 +376,6 @@ void APlayerCharacter::OnLockBoxEndOverlap(UPrimitiveComponent* OverlappedCompon
 	if (OtherActor->ActorHasTag("Lockable"))
 	{
 		LockableEnemies.Remove(OtherActor);
-		GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, FString("Lockable actor removed"));
 	}
 }
 
@@ -580,7 +580,6 @@ void APlayerCharacter::SetLockOffValues()
 
 void APlayerCharacter::OnEnemyDeath(AActor* Enemy)
 {
-	GEngine->AddOnScreenDebugMessage(1, 5.f, FColor::Red, FString("Enemy Died"));
 	if (CurrentEnemyTarget == Enemy)
 	{
 		SetLockOffValues();
