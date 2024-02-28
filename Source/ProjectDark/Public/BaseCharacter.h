@@ -23,12 +23,13 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
 
+	virtual void PlayHitReactMontage(const FVector& ImpactPoint);
+
 protected:
 
 	virtual void BeginPlay() override;
 
 	void PlayMontage(UAnimMontage* Montage, const FName& SectionName);
-	virtual void PlayHitReactMontage(const FVector& ImpactPoint);
 
 	double GetTheta(const FVector& Forward, const FVector& OtherActorLocation);
 

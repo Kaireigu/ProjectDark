@@ -33,6 +33,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	ECharacterState CharacterState;
 
+	UPROPERTY(BlueprintReadOnly)
+	EActionState ActionState;
+
 private:
 
 	void NativeInitializeAnimation() override;

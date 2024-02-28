@@ -7,9 +7,12 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "HitInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "BaseCharacter.h"
 
 AWeapon::AWeapon()
 {
+	Tags.AddUnique("Weapon");
+
 	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
 
 	if (BoxComponent)
@@ -31,13 +34,6 @@ AWeapon::AWeapon()
 	{
 		EndBoxTraceLocation->SetupAttachment(GetRootComponent());
 	}
-}
-
-void AWeapon::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
-{
-	const FAttachmentTransformRules AttachmentRules = FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false);
-
-	AttachToComponent(InParent, AttachmentRules, InSocketName);
 }
 
 void AWeapon::BeginPlay()
@@ -69,7 +65,7 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 	if (HitResult.GetActor())
 	{
 
-		if (HitResult.GetActor()->ActorHasTag(FName("Hitable")))
+		if (HitResult.GetActor()->ActorHasTag(FName("Hitable")) && !HitResult.GetActor()->ActorHasTag(FName("Blocking")))
 		{
 
 			IHitInterface* HittableActor = Cast<IHitInterface>(HitResult.GetActor());
@@ -81,6 +77,16 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
 			UGameplayStatics::ApplyDamage(HitResult.GetActor(), WeaponDamage, GetInstigator()->GetController(), this, UDamageType::StaticClass());
 			IgnoredActors.AddUnique(HitResult.GetActor());
+		}
+
+		if (HitResult.GetActor()->ActorHasTag(FName("Blocking")))
+		{
+			ABaseCharacter* ThisBaseCharacter = Cast<ABaseCharacter>(GetOwner());
+
+			if (ThisBaseCharacter)
+			{
+				ThisBaseCharacter->PlayHitReactMontage(HitResult.ImpactPoint);
+			}
 		}
 	}
 

@@ -19,6 +19,7 @@ class UAnimMontage;
 class UBoxComponent;
 class AEnemy;
 class UHUDOverlay;
+class AShield;
 
 UCLASS()
 class PROJECTDARK_API APlayerCharacter : public ABaseCharacter
@@ -87,6 +88,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* SwitchLockedTargetAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* BlockAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* StopBlockAction;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontageOneHanded;
 
@@ -98,6 +105,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* EquipMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* BlockMontage;
 
 	UPROPERTY(EditAnywhere, Category = Components)
 	UBoxComponent* LockOnBox;
@@ -114,6 +124,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Camera)
 	float LockOffDistance = 2000.f;
 
+	UPROPERTY(VisibleInstanceOnly)
+	AShield* EquippedShield;
+
 private:
 
 	void SetDefaultControllerValues();
@@ -129,6 +142,8 @@ private:
 	void RollOrBackStep(const FInputActionValue& value);
 	void LockOn(const FInputActionValue& value);
 	void SwitchLockOnTarget(const FInputActionValue& value);
+	void Block(const FInputActionValue& value);
+	void StopBlock(const FInputActionValue& value);
 
 	UFUNCTION()
 	void OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -193,4 +208,5 @@ private:
 public:	
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 	FORCEINLINE ECharacterState GetCharacterState() { return CharacterState; }
+	FORCEINLINE EActionState GetActionState() { return ActionState; }
 };

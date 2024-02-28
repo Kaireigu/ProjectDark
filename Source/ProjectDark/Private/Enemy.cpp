@@ -126,6 +126,7 @@ void AEnemy::BeginPlay()
 			EquippedWeapon->SetOwner(this);
 			EquippedWeapon->SetInstigator(this);
 			EquippedWeapon->SetActorHiddenInGame(true);
+			EquippedWeapon->SetItemStateEquipped();
 		}
 	}
 
@@ -180,7 +181,7 @@ void AEnemy::MontageEnd()
 {
 	if (EnemyState == EEnemyState::EES_Dead) { return; }
 
-	EnemyState = EEnemyState::EES_Chasing;
+	EnemyState = EEnemyState::EES_Patrolling;
 }
 
 void AEnemy::MoveToTarget(AActor* Target)
