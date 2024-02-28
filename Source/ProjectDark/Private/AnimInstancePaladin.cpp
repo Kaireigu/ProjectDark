@@ -27,5 +27,6 @@ void UAnimInstancePaladin::NativeUpdateAnimation(float DeltaTime)
 	if (PlayerCharacter)
 	{
 		CharacterState = PlayerCharacter->GetCharacterState();
+		ActionState = PlayerCharacter->GetActionState();
 	}
 }

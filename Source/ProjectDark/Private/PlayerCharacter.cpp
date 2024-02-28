@@ -21,6 +21,7 @@
 #include "HUDOverlay.h"
 #include "ProjectDarkHUD.h"
 #include "Attributes.h"
+#include "Shield.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -169,6 +170,7 @@ void APlayerCharacter::InitialiseComponents()
 
 	LockOnBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Lock On Box"));
 	LockOnBox->SetupAttachment(Camera);
+	LockOnBox->ComponentTags.AddUnique(FName("LockOnBox"));
 
 	StartTraceLocation = CreateDefaultSubobject<USceneComponent>(TEXT("Box Trace Start"));
 	StartTraceLocation->SetupAttachment(Camera);
@@ -233,6 +235,16 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 			EnhancedInputComponent->BindAction(SwitchLockedTargetAction, ETriggerEvent::Triggered, this, &APlayerCharacter::SwitchLockOnTarget);
 		}
 
+		if (BlockAction)
+		{
+			EnhancedInputComponent->BindAction(BlockAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Block);
+		}
+
+		if (StopBlockAction)
+		{
+			EnhancedInputComponent->BindAction(StopBlockAction, ETriggerEvent::Triggered, this, &APlayerCharacter::StopBlock);
+		}
+
 	}
 }
 
@@ -282,16 +294,44 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 		ActionState = EActionState::EAS_Equipping;
 	}
 
-	if (EquippedWeapon == nullptr)
+	if (EquippedWeapon == nullptr && OverlappingItem)
 	{
-		EquippedWeapon = Cast<AWeapon>(OverlappingItem);
-
-		if (EquippedWeapon)
+		if (OverlappingItem->ActorHasTag("Weapon"))
 		{
-			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
-			EquippedWeapon->SetOwner(this);
-			EquippedWeapon->SetInstigator(this);
-			CharacterState = ECharacterState::ECS_EquippedOneHanded;
+			EquippedWeapon = Cast<AWeapon>(OverlappingItem);
+
+			if (EquippedWeapon && EquippedWeapon->IsItemUnequipped())
+			{
+				EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+				EquippedWeapon->SetOwner(this);
+				EquippedWeapon->SetInstigator(this);
+				EquippedWeapon->SetItemStateEquipped();
+				CharacterState = ECharacterState::ECS_EquippedOneHanded;
+			}
+			else
+			{
+				EquippedWeapon = nullptr;
+			}
+		}
+
+	}
+
+	if (EquippedShield == nullptr && OverlappingItem)
+	{
+		if (OverlappingItem->ActorHasTag("Shield"))
+		{
+			EquippedShield = Cast<AShield>(OverlappingItem);
+
+			if (EquippedShield && EquippedShield->IsItemUnequipped())
+			{
+				EquippedShield->AttachMeshToSocket(GetMesh(), FName("LeftForeArmSocket"));
+				EquippedShield->SetOwner(this);
+				EquippedShield->SetItemStateEquipped();
+			}
+			else
+			{
+				EquippedShield = nullptr;
+			}
 		}
 	}
 
@@ -361,6 +401,24 @@ void APlayerCharacter::SwitchLockOnTarget(const FInputActionValue& value)
 		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
 		IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
 	}
+}
+
+void APlayerCharacter::Block(const FInputActionValue& value)
+{
+	if (IsOccupied() || EquippedShield == nullptr) { return; }
+
+	PlayMontage(BlockMontage, FName("StartBlock"));
+	ActionState = EActionState::EAS_Blocking;
+	Tags.AddUnique("Blocking");
+}
+
+void APlayerCharacter::StopBlock(const FInputActionValue& value)
+{
+	if (ActionState != EActionState::EAS_Blocking || EquippedShield == nullptr)
+
+	PlayMontage(BlockMontage, FName("StopBlock"));
+	ActionState = EActionState::EAS_Unoccupied;
+	Tags.Remove("Blocking");
 }
 
 void APlayerCharacter::OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

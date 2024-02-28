@@ -9,6 +9,12 @@
 class UStaticMeshComponent;
 class USphereComponent;
 
+enum class EItemStatus : uint8
+{
+	EIS_Unequipped,
+	EIS_Equipped
+};
+
 UCLASS()
 class PROJECTDARK_API AItem : public AActor
 {
@@ -17,6 +23,9 @@ class PROJECTDARK_API AItem : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AItem();
+
+	void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName);
+
 
 protected:
 	// Called when the game starts or when spawned
@@ -36,8 +45,12 @@ private:
 	UFUNCTION()
 	void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	EItemStatus ItemState = EItemStatus::EIS_Unequipped;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	FORCEINLINE void SetItemStateEquipped() { ItemState = EItemStatus::EIS_Equipped; }
+	FORCEINLINE bool IsItemUnequipped() { return ItemState == EItemStatus::EIS_Unequipped; }
 
 };

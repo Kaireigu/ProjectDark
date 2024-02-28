@@ -21,6 +21,13 @@ AItem::AItem()
 	SphereComponent->SetGenerateOverlapEvents(true);
 }
 
+void AItem::AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName)
+{
+	const FAttachmentTransformRules AttachmentRules = FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false);
+
+	AttachToComponent(InParent, AttachmentRules, InSocketName);
+}
+
 // Called when the game starts or when spawned
 void AItem::BeginPlay()
 {
@@ -32,6 +39,8 @@ void AItem::BeginPlay()
 
 void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	if (OtherComp->ComponentHasTag("LockOnBox")) { return; }
+
 	APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(OtherActor);
 
 	if (PlayerCharacter)
@@ -42,6 +51,8 @@ void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 
 void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+	if (OtherComp->ComponentHasTag("LockOnBox")) { return; }
+
 	APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(OtherActor);
 
 	if (PlayerCharacter)

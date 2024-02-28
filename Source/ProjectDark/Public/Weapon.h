@@ -20,8 +20,6 @@ public:
 
 	AWeapon();
 
-	void AttachMeshToSocket(USceneComponent* InParent, const FName& InSocketName);
-
 	TArray<AActor*> IgnoredActors;
 
 	UFUNCTION(BlueprintImplementableEvent)
