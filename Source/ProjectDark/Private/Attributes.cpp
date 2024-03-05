@@ -15,3 +15,8 @@ void UAttributes::ReceiveDamage(const float& Damage)
 	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
 }
 
+void UAttributes::ReceiveHeal(const float& HealAmount)
+{
+	Health = FMath::Clamp(Health + HealAmount, 0.f, MaxHealth);
+}
+

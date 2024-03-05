@@ -22,6 +22,7 @@
 #include "ProjectDarkHUD.h"
 #include "Attributes.h"
 #include "Shield.h"
+#include "Potion.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -130,15 +131,100 @@ void APlayerCharacter::SetUnoccupied()
 
 void APlayerCharacter::SetWeaponSocketOnEquipping()
 {
-	if (IsUnequipped())
+	if (EquippedWeapon == nullptr) { return; }
+
+	if (IsUnequipped() || IsShieldEquipped())
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
-		CharacterState = ECharacterState::ECS_EquippedOneHanded;
+		if (IsShieldEquipped())
+		{
+			CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
+		}
+		else if (IsUnequipped())
+		{
+			CharacterState = ECharacterState::ECS_EquippedOneHanded;
+		}
 	}
-	else if (IsEquippedWithOneHandedWeapon())
+	else if (IsEquippedWithOneHandedWeapon() || IsEquippedSwordAndShield())
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
-		CharacterState = ECharacterState::ECS_Unequipped;
+
+		if (IsEquippedSwordAndShield())
+		{
+			CharacterState = ECharacterState::ECS_EquippedShield;
+		}
+		else if (IsEquippedWithOneHandedWeapon())
+		{
+			CharacterState = ECharacterState::ECS_Unequipped;
+		}
+	}
+}
+
+void APlayerCharacter::SetShieldSocketOnEquipping()
+{
+	if (EquippedShield == nullptr) { return; }
+
+	if (IsUnequipped() || IsEquippedWithOneHandedWeapon())
+	{
+		EquippedShield->AttachMeshToSocket(GetMesh(), FName("LeftForeArmSocket"));
+
+		if (IsEquippedWithOneHandedWeapon())
+		{
+			CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
+		}
+		else if (IsUnequipped())
+		{
+			CharacterState = ECharacterState::ECS_EquippedShield;
+		}
+	}
+	else if (IsShieldEquipped() || IsEquippedSwordAndShield())
+	{
+		EquippedShield->AttachMeshToSocket(GetMesh(), FName("SpineSocket2"));
+
+		if (IsEquippedSwordAndShield())
+		{
+			CharacterState = ECharacterState::ECS_EquippedOneHanded;
+		}
+		else if (IsShieldEquipped())
+		{
+			CharacterState = ECharacterState::ECS_Unequipped;
+		}
+	}
+}
+
+void APlayerCharacter::DrinkPotion()
+{
+	if (EquippedPotion)
+	{
+		if (EquippedPotion->CanUsePotion())
+		{
+			if (AttributeComponent)
+			{
+				AttributeComponent->ReceiveHeal(EquippedPotion->GetHealAmount());
+				EquippedPotion->ReduceUsesByOne();
+
+				if (EquippedPotion->CanUsePotion() == false)
+				{
+					EquippedPotion->Destroy();
+					EquippedPotion = nullptr;
+				}
+
+				if (HUDOverlay)
+				{
+					HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
+				}
+			}
+		}
+	}
+}
+
+void APlayerCharacter::AttachPotionToHip()
+{
+	SetUnoccupied();
+
+	if (EquippedPotion)
+	{
+		EquippedPotion->AttachMeshToSocket(GetMesh(), FName("HipSocket"));
 	}
 }
 
@@ -246,6 +332,21 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 			EnhancedInputComponent->BindAction(StopBlockAction, ETriggerEvent::Triggered, this, &APlayerCharacter::StopBlock);
 		}
 
+		if (UseItemAction)
+		{
+			EnhancedInputComponent->BindAction(UseItemAction, ETriggerEvent::Triggered, this, &APlayerCharacter::UseItem);
+		}
+
+		if (SelectRightHandAction)
+		{
+			EnhancedInputComponent->BindAction(SelectRightHandAction, ETriggerEvent::Triggered, this, &APlayerCharacter::SwitchRightHand);
+		}
+
+		if (SelectLeftHandAction)
+		{
+			EnhancedInputComponent->BindAction(SelectLeftHandAction, ETriggerEvent::Triggered, this, &APlayerCharacter::SwitchLeftHand);
+		}
+
 	}
 }
 
@@ -307,7 +408,16 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 				EquippedWeapon->SetOwner(this);
 				EquippedWeapon->SetInstigator(this);
 				EquippedWeapon->SetItemStateEquipped();
-				CharacterState = ECharacterState::ECS_EquippedOneHanded;
+
+				if (IsUnequipped())
+				{
+					CharacterState = ECharacterState::ECS_EquippedOneHanded;
+				}
+				else if (IsShieldEquipped())
+				{
+					CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
+				}
+
 			}
 			else
 			{
@@ -328,6 +438,15 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 				EquippedShield->AttachMeshToSocket(GetMesh(), FName("LeftForeArmSocket"));
 				EquippedShield->SetOwner(this);
 				EquippedShield->SetItemStateEquipped();
+
+				if (IsUnequipped())
+				{
+					CharacterState = ECharacterState::ECS_EquippedShield;
+				}
+				else if (IsEquippedWithOneHandedWeapon())
+				{
+					CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
+				}
 			}
 			else
 			{
@@ -336,11 +455,30 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 		}
 	}
 
+	if (EquippedPotion == nullptr && OverlappingItem)
+	{
+		if (OverlappingItem->ActorHasTag("Potion"))
+		{
+			EquippedPotion = Cast<APotion>(OverlappingItem);
+
+			if (EquippedPotion && EquippedPotion->IsItemUnequipped())
+			{
+				EquippedPotion->AttachMeshToSocket(GetMesh(), FName("HipSocket"));
+				EquippedPotion->SetOwner(this);
+				EquippedPotion->SetItemStateEquipped();
+			}
+			else
+			{
+				EquippedPotion = nullptr;
+			}
+		}
+	}
+
 }
 
 void APlayerCharacter::Attack(const FInputActionValue& value)
 {
-	if (IsUnequipped()) { return; }
+	if (IsUnequipped() || IsShieldEquipped()) { return; }
 
 	if (bCanCombo)
 	{
@@ -406,7 +544,7 @@ void APlayerCharacter::SwitchLockOnTarget(const FInputActionValue& value)
 
 void APlayerCharacter::Block(const FInputActionValue& value)
 {
-	if (IsOccupied() || EquippedShield == nullptr) { return; }
+	if (IsOccupied() || EquippedShield == nullptr || IsShieldEquipped() == false && IsEquippedSwordAndShield() == false) { return; }
 
 	PlayMontage(BlockMontage, FName("StartBlock"));
 	ActionState = EActionState::EAS_Blocking;
@@ -420,6 +558,26 @@ void APlayerCharacter::StopBlock(const FInputActionValue& value)
 	PlayMontage(BlockMontage, FName("StopBlock"));
 	ActionState = EActionState::EAS_Unoccupied;
 	Tags.Remove("Blocking");
+}
+
+void APlayerCharacter::UseItem(const FInputActionValue& value)
+{
+	if (EquippedPotion)
+	{
+		EquippedPotion->AttachMeshToSocket(GetMesh(), FName("LeftHandSocket"));
+		PlayMontage(PotionMontage, FName("Default"));
+		ActionState = EActionState::EAS_Equipping;
+	}
+}
+
+void APlayerCharacter::SwitchRightHand(const FInputActionValue& value)
+{
+	SetWeaponSocketOnEquipping();
+}
+
+void APlayerCharacter::SwitchLeftHand(const FInputActionValue& value)
+{
+	SetShieldSocketOnEquipping();
 }
 
 void APlayerCharacter::OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -702,6 +860,16 @@ bool APlayerCharacter::IsEquippedWithOneHandedWeapon()
 bool APlayerCharacter::IsUnequipped()
 {
 	return CharacterState == ECharacterState::ECS_Unequipped;
+}
+
+bool APlayerCharacter::IsEquippedSwordAndShield()
+{
+	return CharacterState == ECharacterState::ECS_EquippedSwordAndShield;
+}
+
+bool APlayerCharacter::IsShieldEquipped()
+{
+	return CharacterState == ECharacterState::ECS_EquippedShield;
 }
 
 

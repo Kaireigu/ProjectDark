@@ -20,6 +20,7 @@ class UBoxComponent;
 class AEnemy;
 class UHUDOverlay;
 class AShield;
+class APotion;
 
 UCLASS()
 class PROJECTDARK_API APlayerCharacter : public ABaseCharacter
@@ -54,6 +55,15 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void SetWeaponSocketOnEquipping();
+
+	UFUNCTION(BlueprintCallable)
+	void SetShieldSocketOnEquipping();
+
+	UFUNCTION(BlueprintCallable)
+	void DrinkPotion();
+
+	UFUNCTION(BlueprintCallable)
+	void AttachPotionToHip();
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
@@ -94,6 +104,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* StopBlockAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* UseItemAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* SelectRightHandAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* SelectLeftHandAction;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontageOneHanded;
 
@@ -108,6 +127,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* BlockMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* PotionMontage;
 
 	UPROPERTY(EditAnywhere, Category = Components)
 	UBoxComponent* LockOnBox;
@@ -127,6 +149,9 @@ protected:
 	UPROPERTY(VisibleInstanceOnly)
 	AShield* EquippedShield;
 
+	UPROPERTY(VisibleInstanceOnly)
+	APotion* EquippedPotion;
+
 private:
 
 	void SetDefaultControllerValues();
@@ -144,6 +169,9 @@ private:
 	void SwitchLockOnTarget(const FInputActionValue& value);
 	void Block(const FInputActionValue& value);
 	void StopBlock(const FInputActionValue& value);
+	void UseItem(const FInputActionValue& value);
+	void SwitchRightHand(const FInputActionValue& value);
+	void SwitchLeftHand(const FInputActionValue& value);
 
 	UFUNCTION()
 	void OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -170,6 +198,8 @@ private:
 	bool IsNotMoving();
 	bool IsEquippedWithOneHandedWeapon();
 	bool IsUnequipped();
+	bool IsEquippedSwordAndShield();
+	bool IsShieldEquipped();
 
 	bool bCanCombo = false;
 	bool bComboActive = false;
