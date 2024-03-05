@@ -14,6 +14,7 @@ class UAnimMontage;
 class AAIController;
 class UPawnSensingComponent;
 class AWeapon;
+class AProjectile;
 class UHealthBarComponent;
 
 UCLASS()
@@ -43,17 +44,37 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void MontageEnd();
 
+	UFUNCTION(BlueprintCallable)
+	void FireArrow();
+
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	TSubclassOf<AWeapon> WeaponClass;
 
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	bool HasRangedWeapon = false;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TSubclassOf<AProjectile> ProjectileClass;
+
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	AProjectile* Arrow;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
+	ECharacterState EnemyEquipState = ECharacterState::ECS_Unequipped;
+
 	UPROPERTY(VisibleInstanceOnly)
 	AActor* CombatTarget;
+
+	FVector CombatTargetLocationOnAttack;
 
 	UPROPERTY(EditAnywhere)
 	UPawnSensingComponent* PawnSensingComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* ArcherAttackMontage;
 
 	UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
 	AActor* PatrolTarget;
@@ -90,6 +111,7 @@ private:
 
 	bool InTargetRange(AActor* Target, const double& Radius);
 
+	UPROPERTY(VisibleInstanceOnly)
 	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
 
 public:	
