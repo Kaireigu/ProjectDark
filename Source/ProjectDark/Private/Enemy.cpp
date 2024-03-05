@@ -11,6 +11,7 @@
 #include "Perception/PawnSensingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Weapon.h"
+#include "Projectile.h"
 #include "HealthBarComponent.h"
 #include "HealthBar.h"
 #include "Attributes.h"
@@ -28,12 +29,13 @@ AEnemy::AEnemy()
 	PawnSensingComponent->SightRadius = VisualRadius;
 	PawnSensingComponent->SetPeripheralVisionAngle(PeripheralVisionAngle);
 
-	HealthBarComponent = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar Component"));
-	HealthBarComponent->SetupAttachment(GetRootComponent());
-
 	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
+	SetRootComponent(GetCapsuleComponent());
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
+
+	HealthBarComponent = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar Component"));
+	HealthBarComponent->SetupAttachment(GetRootComponent());
 
 	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
@@ -120,13 +122,22 @@ void AEnemy::BeginPlay()
 	{
 		EquippedWeapon = World->SpawnActor<AWeapon>(WeaponClass, GetActorLocation(), GetActorRotation());
 
-		if (EquippedWeapon)
+		if (EquippedWeapon && HasRangedWeapon == false)
 		{
 			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("LeftArmSocket"));
 			EquippedWeapon->SetOwner(this);
 			EquippedWeapon->SetInstigator(this);
 			EquippedWeapon->SetActorHiddenInGame(true);
 			EquippedWeapon->SetItemStateEquipped();
+			EnemyEquipState = ECharacterState::ECS_EquippedOneHanded;
+		}
+		else if (EquippedWeapon && HasRangedWeapon)
+		{
+			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("LeftArmSocket"));
+			EquippedWeapon->SetOwner(this);
+			EquippedWeapon->SetInstigator(this);
+			EquippedWeapon->SetItemStateEquipped();
+			EnemyEquipState = ECharacterState::ECS_EquippedLongbow;
 		}
 	}
 
@@ -148,6 +159,7 @@ void AEnemy::Die()
 	Super::Die();
 	EnemyState = EEnemyState::EES_Dead;
 	EnemyDied.Broadcast(this);
+	EquippedWeapon->Destroy();
 }
 
 void AEnemy::PlayHitReactMontage(const FVector& ImpactPoint)
@@ -186,11 +198,19 @@ void AEnemy::MontageEnd()
 
 void AEnemy::MoveToTarget(AActor* Target)
 {
-	if (EnemyController == nullptr || Target == nullptr || EnemyState == EEnemyState::EES_Dead) { return; }
+	if (EnemyController == nullptr || Target == nullptr || EnemyState == EEnemyState::EES_Dead || EnemyState == EEnemyState::EES_Attacking) { return; }
 
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(Target);
-	MoveRequest.SetAcceptanceRadius(TargetRadius);
+
+	if (CombatTarget && HasRangedWeapon)
+	{
+		MoveRequest.SetAcceptanceRadius(AcceptanceRadius);
+	}
+	else
+	{
+		MoveRequest.SetAcceptanceRadius(TargetRadius);
+	}
 	EnemyController->MoveTo(MoveRequest);
 }
 
@@ -208,6 +228,7 @@ void AEnemy::CheckDistanceToCombatTarget()
 		}
 		else if (InTargetRange(CombatTarget, AttackRadius))
 		{
+			SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation()));
 			Attack();
 		}
 		else if (InTargetRange(CombatTarget, VisualRadius))
@@ -223,10 +244,37 @@ void AEnemy::Attack()
 {
 	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead) { return; }
 	
-	if (AttackMontage)
+	if (AttackMontage && EnemyEquipState == ECharacterState::ECS_EquippedOneHanded)
 	{
 		EnemyState = EEnemyState::EES_Attacking;
 		PlayMontage(AttackMontage, FName("Attack1"));
+	}
+	else if (ArcherAttackMontage && EnemyEquipState == ECharacterState::ECS_EquippedLongbow)
+	{
+		EnemyState = EEnemyState::EES_Attacking;
+
+		if (CombatTarget)
+		{
+			CombatTargetLocationOnAttack = CombatTarget->GetActorLocation();
+		}
+
+		PlayMontage(ArcherAttackMontage, FName("DrawArrow"));
+	}
+}
+
+void AEnemy::FireArrow()
+{
+	UWorld* World = GetWorld();
+
+	if (World && ProjectileClass)
+	{
+		Arrow = World->SpawnActor<AProjectile>(ProjectileClass, GetActorLocation(), GetActorRotation());
+
+		if (Arrow && CombatTarget)
+		{
+			Arrow->FireProjectile(CombatTargetLocationOnAttack, GetActorLocation());
+		}
+		
 	}
 }
 

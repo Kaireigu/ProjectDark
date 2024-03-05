@@ -80,6 +80,45 @@ void ABaseCharacter::PlayHitReactMontage(const FVector& ImpactPoint)
 	}
 }
 
+bool ABaseCharacter::IsBehind(const AActor* OtherActor)
+{
+	double Theta = GetTheta(GetActorForwardVector(), OtherActor->GetActorLocation());
+
+	if (Theta > 0.f && Theta >= 90.f)
+	{
+		return true;
+	}
+	else if (Theta < 0.f && Theta <= -90.f)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+
+}
+
+bool ABaseCharacter::IsFacing(const AActor* OtherActor)
+{
+	double Theta = GetTheta(GetActorForwardVector(), OtherActor->GetActorLocation());
+
+	GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, FString::SanitizeFloat(Theta));
+
+	if (Theta > 0.f && Theta <= 90.f)
+	{
+		return true;
+	}
+	else if (Theta < 0.f && Theta >= -90.f)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 double ABaseCharacter::GetTheta(const FVector& Forward, const FVector& OtherActorLocation)
 {
 	const FVector EnemyLocation = OtherActorLocation;

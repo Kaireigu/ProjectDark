@@ -154,6 +154,8 @@ void APlayerCharacter::InitialiseComponents()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, OrientRotationRateYaw, 0.f); // Setting Rotation Rate so player orients quicker.
 
+	SetRootComponent(GetCapsuleComponent());
+
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
 	CameraBoom->bUsePawnControlRotation = true;
@@ -162,7 +164,6 @@ void APlayerCharacter::InitialiseComponents()
 	Camera->SetupAttachment(CameraBoom);
 
 	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
-	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
 
 	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
@@ -414,7 +415,7 @@ void APlayerCharacter::Block(const FInputActionValue& value)
 
 void APlayerCharacter::StopBlock(const FInputActionValue& value)
 {
-	if (ActionState != EActionState::EAS_Blocking || EquippedShield == nullptr)
+	if (ActionState == EActionState::EAS_Blocking && EquippedShield)
 
 	PlayMontage(BlockMontage, FName("StopBlock"));
 	ActionState = EActionState::EAS_Unoccupied;

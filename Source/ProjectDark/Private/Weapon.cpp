@@ -65,8 +65,22 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 	if (HitResult.GetActor())
 	{
 
-		if (HitResult.GetActor()->ActorHasTag(FName("Hitable")) && !HitResult.GetActor()->ActorHasTag(FName("Blocking")))
+		if (HitResult.GetActor()->ActorHasTag(FName("Hitable")))
 		{
+			if (HitResult.GetActor()->ActorHasTag(FName("Blocking")))
+			{
+				ABaseCharacter* EnemyCharacter = Cast<ABaseCharacter>(HitResult.GetActor());
+				ABaseCharacter* ThisCharacter = Cast<ABaseCharacter>(GetOwner());
+
+				if (EnemyCharacter && ThisCharacter)
+				{
+					if (EnemyCharacter->IsFacing(GetOwner()))
+					{ 
+						ThisCharacter->PlayHitReactMontage(HitResult.ImpactPoint);
+						return; 
+					}
+				}
+			}
 
 			IHitInterface* HittableActor = Cast<IHitInterface>(HitResult.GetActor());
 
@@ -77,16 +91,6 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
 			UGameplayStatics::ApplyDamage(HitResult.GetActor(), WeaponDamage, GetInstigator()->GetController(), this, UDamageType::StaticClass());
 			IgnoredActors.AddUnique(HitResult.GetActor());
-		}
-
-		if (HitResult.GetActor()->ActorHasTag(FName("Blocking")))
-		{
-			ABaseCharacter* ThisBaseCharacter = Cast<ABaseCharacter>(GetOwner());
-
-			if (ThisBaseCharacter)
-			{
-				ThisBaseCharacter->PlayHitReactMontage(HitResult.ImpactPoint);
-			}
 		}
 	}
 

@@ -25,6 +25,9 @@ public:
 
 	virtual void PlayHitReactMontage(const FVector& ImpactPoint);
 
+	bool IsBehind(const AActor* OtherActor);
+	bool IsFacing(const AActor* OtherActor);
+
 protected:
 
 	virtual void BeginPlay() override;
