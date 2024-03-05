@@ -17,6 +17,7 @@ public:
 	UAttributes();
 
 	void ReceiveDamage(const float& Damage);
+	void ReceiveHeal(const float& HealAmount);
 
 protected:
 
