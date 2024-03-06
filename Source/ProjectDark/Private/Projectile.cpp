@@ -4,7 +4,6 @@
 #include "Projectile.h"
 #include "HitInterface.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Character.h"
 
@@ -79,11 +78,11 @@ void AProjectile::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 				}
 			}
 
-			PlayerHitInterface->GetHit(this, GetActorLocation());
-			UGameplayStatics::ApplyDamage(OtherActor, ProjectileDamage, nullptr, this, UDamageType::StaticClass());
+			PlayerHitInterface->GetHitWithDamage(ProjectileDamage, GetActorLocation());
+
 			ProjectileMovementComponent->Velocity = FVector::ZeroVector;
-			AttachMeshToSocket(HitCharacter->GetMesh(), FName("ProjectileSocket"));
-			SetLifeSpan(20.f);
+			//AttachMeshToSocket(HitCharacter->GetMesh(), FName("ProjectileSocket"));
+			Destroy();
 		}
 
 	}

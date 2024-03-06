@@ -59,3 +59,8 @@ void ABreakableActor::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 	}
 }
 
+void ABreakableActor::GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint)
+{
+
+}
+

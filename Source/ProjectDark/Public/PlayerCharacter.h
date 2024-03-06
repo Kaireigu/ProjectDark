@@ -7,6 +7,7 @@
 #include "InputActionValue.h"
 #include "CharacterTypes.h"
 #include "BaseCharacter.h"
+#include "InteractInterface.h"
 #include "PlayerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -23,7 +24,7 @@ class AShield;
 class APotion;
 
 UCLASS()
-class PROJECTDARK_API APlayerCharacter : public ABaseCharacter
+class PROJECTDARK_API APlayerCharacter : public ABaseCharacter, public IInteractInterface
 {
 	GENERATED_BODY()
 
@@ -35,6 +36,9 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
+	void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) override;
+
+	void InteractWithCheckpoint() override;
 
 	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -131,6 +135,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* PotionMontage;
 
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* SitMontage;
+
 	UPROPERTY(EditAnywhere, Category = Components)
 	UBoxComponent* LockOnBox;
 
@@ -205,6 +212,10 @@ private:
 	bool bComboActive = false;
 	bool bIsLockingOn = false;
 	bool bIsFirstTimeLockingOn = true;
+	bool bCanInteractWithCheckpoint = false;
+
+	void ReceiveHealth(const float& HealAmount);
+	void ReceiveDamage(const float& DamageAmount);
 
 	UPROPERTY(VisibleInstanceOnly)
 	TArray<AActor*> LockableEnemies;

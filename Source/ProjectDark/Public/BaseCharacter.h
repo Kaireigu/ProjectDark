@@ -22,6 +22,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
+	void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) override;
 
 	virtual void PlayHitReactMontage(const FVector& ImpactPoint);
 

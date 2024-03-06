@@ -37,13 +37,13 @@ protected:
 	UPROPERTY(EditAnywhere)
 	USphereComponent* SphereComponent;
 
-private:
-
 	UFUNCTION()
 	virtual void OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
 	virtual void OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+private:
 
 	EItemStatus ItemState = EItemStatus::EIS_Unequipped;
 

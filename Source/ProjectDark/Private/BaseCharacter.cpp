@@ -34,6 +34,11 @@ void ABaseCharacter::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 	PlayHitReactMontage(ImpactPoint);
 }
 
+void ABaseCharacter::GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint)
+{
+	PlayHitReactMontage(ImpactPoint);
+}
+
 void ABaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();

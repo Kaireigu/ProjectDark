@@ -27,6 +27,7 @@ public:
 	void OnBroken(const FChaosBreakEvent& BreakEvent);
 
 	virtual void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
+	virtual void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) override;
 
 	UPROPERTY(EditAnywhere)
 	float DestructionStrength = 50.f;

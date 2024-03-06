@@ -23,6 +23,7 @@
 #include "Attributes.h"
 #include "Shield.h"
 #include "Potion.h"
+#include "Kismet/GameplayStatics.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -60,17 +61,33 @@ void APlayerCharacter::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 
 }
 
+void APlayerCharacter::GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint)
+{
+
+	if (ActionState != EActionState::EAS_HitReacting)
+	{
+		Super::GetHitWithDamage(DamageAmount, ImpactPoint);
+		UGameplayStatics::ApplyDamage(this, DamageAmount, nullptr, nullptr, UDamageType::StaticClass());
+	}
+
+}
+
+
+void APlayerCharacter::InteractWithCheckpoint()
+{
+	if (bCanInteractWithCheckpoint)
+	{
+		bCanInteractWithCheckpoint = false;
+	}
+	else
+	{
+		bCanInteractWithCheckpoint = true;
+	}
+}
+
 float APlayerCharacter::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	if (AttributeComponent)
-	{
-		AttributeComponent->ReceiveDamage(DamageAmount);
-
-		if (HUDOverlay)
-		{
-			HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
-		}
-	}
+	ReceiveDamage(DamageAmount);
 
 	return DamageAmount;
 }
@@ -198,21 +215,14 @@ void APlayerCharacter::DrinkPotion()
 	{
 		if (EquippedPotion->CanUsePotion())
 		{
-			if (AttributeComponent)
+			ReceiveHealth(EquippedPotion->GetHealAmount());
+
+			EquippedPotion->ReduceUsesByOne();
+
+			if (EquippedPotion->CanUsePotion() == false)
 			{
-				AttributeComponent->ReceiveHeal(EquippedPotion->GetHealAmount());
-				EquippedPotion->ReduceUsesByOne();
-
-				if (EquippedPotion->CanUsePotion() == false)
-				{
-					EquippedPotion->Destroy();
-					EquippedPotion = nullptr;
-				}
-
-				if (HUDOverlay)
-				{
-					HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
-				}
+				EquippedPotion->Destroy();
+				EquippedPotion = nullptr;
 			}
 		}
 	}
@@ -472,6 +482,39 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 				EquippedPotion = nullptr;
 			}
 		}
+	}
+
+	if (bCanInteractWithCheckpoint && ActionState != EActionState::EAS_Interacting)
+	{
+		ActionState = EActionState::EAS_Interacting;
+		PlayMontage(SitMontage, FName("Default"));
+
+		if (AttributeComponent)
+		{
+			ReceiveHealth(AttributeComponent->GetMaxHealth());
+		}
+
+		if (IsEquippedSwordAndShield())
+		{
+			SetWeaponSocketOnEquipping();
+			SetShieldSocketOnEquipping();
+		}
+		else if (IsEquippedWithOneHandedWeapon())
+		{
+			SetWeaponSocketOnEquipping();
+		}
+		else if (IsShieldEquipped())
+		{
+			SetShieldSocketOnEquipping();
+		}
+	}
+	else if (bCanInteractWithCheckpoint && ActionState == EActionState::EAS_Interacting)
+	{
+		PlayMontage(SitMontage, FName("StandingUp"));
+
+		SetWeaponSocketOnEquipping();
+		SetShieldSocketOnEquipping();
+		
 	}
 
 }
@@ -870,6 +913,32 @@ bool APlayerCharacter::IsEquippedSwordAndShield()
 bool APlayerCharacter::IsShieldEquipped()
 {
 	return CharacterState == ECharacterState::ECS_EquippedShield;
+}
+
+void APlayerCharacter::ReceiveHealth(const float& HealAmount)
+{
+	if (AttributeComponent)
+	{
+		AttributeComponent->ReceiveHeal(HealAmount);
+
+		if (HUDOverlay)
+		{
+			HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
+		}
+	}
+}
+
+void APlayerCharacter::ReceiveDamage(const float& DamageAmount)
+{
+	if (AttributeComponent)
+	{
+		AttributeComponent->ReceiveDamage(DamageAmount);
+
+		if (HUDOverlay)
+		{
+			HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
+		}
+	}
 }
 
 
