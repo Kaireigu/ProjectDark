@@ -41,11 +41,20 @@ void AItem::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 {
 	if (OtherComp->ComponentHasTag("LockOnBox")) { return; }
 
-	APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(OtherActor);
+	PlayerCharacter = Cast<APlayerCharacter>(OtherActor);
 
-	if (PlayerCharacter)
+	if (PlayerCharacter && PlayerCharacter == OtherActor)
 	{
 		PlayerCharacter->SetOverlappingItem(this);
+
+		if (ItemState != EItemStatus::EIS_Equipped)
+		{
+			PlayerCharacter->SetHUDInteractText(InteractText);
+		}
+		else
+		{
+			PlayerCharacter->ClearHUDInteractText();
+		}
 	}
 }
 
@@ -53,11 +62,11 @@ void AItem::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor*
 {
 	if (OtherComp->ComponentHasTag("LockOnBox")) { return; }
 
-	APlayerCharacter* PlayerCharacter = Cast<APlayerCharacter>(OtherActor);
-
-	if (PlayerCharacter)
+	if (PlayerCharacter && PlayerCharacter == OtherActor)
 	{
 		PlayerCharacter->SetOverlappingItem(nullptr);
+		PlayerCharacter->ClearHUDInteractText();
+
 	}
 }
 
@@ -66,5 +75,16 @@ void AItem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AItem::SetItemStateEquipped()
+{
+	ItemState = EItemStatus::EIS_Equipped;
+	SphereComponent->SetGenerateOverlapEvents(false);
+
+	if (PlayerCharacter)
+	{
+		PlayerCharacter->ClearHUDInteractText();
+	}
 }
 

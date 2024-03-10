@@ -6,4 +6,5 @@
 APotion::APotion()
 {
 	Tags.AddUnique(FName("Potion"));
+	InteractText = FString("Potion");
 }

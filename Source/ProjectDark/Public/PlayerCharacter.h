@@ -39,6 +39,8 @@ public:
 	void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) override;
 
 	void InteractWithCheckpoint() override;
+	void SetHUDInteractText(const FString& InteractText);
+	void ClearHUDInteractText();
 
 	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -74,6 +76,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly)
 	EActionState ActionState = EActionState::EAS_Unoccupied;
+
+	UPROPERTY(VisibleInstanceOnly)
+	bool bCanInteractWithCheckpoint = false;
 
 	UPROPERTY(EditAnywhere, Category = Movement)
 	float OrientRotationRateYaw = 1080.f;
@@ -212,7 +217,6 @@ private:
 	bool bComboActive = false;
 	bool bIsLockingOn = false;
 	bool bIsFirstTimeLockingOn = true;
-	bool bCanInteractWithCheckpoint = false;
 
 	void ReceiveHealth(const float& HealAmount);
 	void ReceiveDamage(const float& DamageAmount);
@@ -228,6 +232,8 @@ private:
 
 	UPROPERTY()
 	AActor* EnemyTargetLeft;
+
+	IHitInterface* CurrentEnemyTargetHitInterface;
 
 	UPROPERTY()
 	AEnemy* IsDeadEnemy;

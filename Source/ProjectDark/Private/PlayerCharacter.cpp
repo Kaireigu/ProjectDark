@@ -85,6 +85,22 @@ void APlayerCharacter::InteractWithCheckpoint()
 	}
 }
 
+void APlayerCharacter::SetHUDInteractText(const FString& InteractText)
+{
+	if (HUDOverlay)
+	{
+		HUDOverlay->SetInteractTextBox(InteractText);
+	}
+}
+
+void APlayerCharacter::ClearHUDInteractText()
+{
+	if (HUDOverlay)
+	{
+		HUDOverlay->ClearInteractTextBox();
+	}
+}
+
 float APlayerCharacter::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	ReceiveDamage(DamageAmount);
@@ -115,6 +131,7 @@ void APlayerCharacter::BeginPlay()
 			{
 				HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
 				HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
+				HUDOverlay->HideInteractTextBox();
 			}
 		}
 	}
@@ -488,6 +505,7 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 	{
 		ActionState = EActionState::EAS_Interacting;
 		PlayMontage(SitMontage, FName("Default"));
+		ClearHUDInteractText();
 
 		if (AttributeComponent)
 		{
@@ -511,7 +529,6 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 	else if (bCanInteractWithCheckpoint && ActionState == EActionState::EAS_Interacting)
 	{
 		PlayMontage(SitMontage, FName("StandingUp"));
-
 		SetWeaponSocketOnEquipping();
 		SetShieldSocketOnEquipping();
 		
@@ -542,6 +559,8 @@ void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 
 	if (IsMoving())
 	{
+		//FVector RollDirection = GetVelocity().GetSafeNormal();
+		//SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorForwardVector(), RollDirection));
 		PlayMontage(RollMontage, FName("Roll1"));
 		CreateFields(GetActorLocation());
 	}
@@ -573,13 +592,42 @@ void APlayerCharacter::SwitchLockOnTarget(const FInputActionValue& value)
 
 	if (Input > 0.f && EnemyTargetRight)
 	{
+		CurrentEnemyTargetHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
+
+		if (CurrentEnemyTargetHitInterface)
+		{
+			CurrentEnemyTargetHitInterface->BeLockedOff();
+		}
+
 		CurrentEnemyTarget = EnemyTargetRight;
+
+		CurrentEnemyTargetHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
+
+		if (CurrentEnemyTargetHitInterface)
+		{
+			CurrentEnemyTargetHitInterface->BeLockedOnTo();
+		}
+		
 		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
 		IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
 	}
 	else if (Input < 0.f && EnemyTargetLeft)
 	{
+		CurrentEnemyTargetHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
+
+		if (CurrentEnemyTargetHitInterface)
+		{
+			CurrentEnemyTargetHitInterface->BeLockedOff();
+		}
 		CurrentEnemyTarget = EnemyTargetLeft;
+
+		CurrentEnemyTargetHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
+
+		if (CurrentEnemyTargetHitInterface)
+		{
+			CurrentEnemyTargetHitInterface->BeLockedOnTo();
+		}
+		
 		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
 		IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
 	}
@@ -714,6 +762,10 @@ void APlayerCharacter::UpdateLockOnTarget(float& DeltaTime)
 	else if (bIsLockingOn == false)
 	{
 		SetLockOffValues();
+		if (CurrentEnemyTargetHitInterface)
+		{
+			CurrentEnemyTargetHitInterface->BeLockedOff();
+		}
 	}
 }
 
@@ -788,6 +840,13 @@ void APlayerCharacter::DetermineFirstLockOnTarget()
 				LockOnTargetPosition = EnemyLocationElement;
 				CurrentEnemyTarget = LockableEnemies[i];
 			}
+		}
+
+		CurrentEnemyTargetHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
+
+		if (CurrentEnemyTargetHitInterface)
+		{
+			CurrentEnemyTargetHitInterface->BeLockedOnTo();
 		}
 
 		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);

@@ -12,6 +12,7 @@
 AWeapon::AWeapon()
 {
 	Tags.AddUnique("Weapon");
+	InteractText = FString("Pick Up Weapon");
 
 	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
 

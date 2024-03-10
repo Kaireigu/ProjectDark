@@ -25,4 +25,6 @@ public:
 
 	virtual void GetHit(AActor* OtherActor, const FVector& ImpactPoint) = 0;
 	virtual void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) = 0;
+	virtual void BeLockedOnTo();
+	virtual void BeLockedOff();
 };
