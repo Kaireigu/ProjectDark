@@ -36,6 +36,7 @@ AEnemy::AEnemy()
 
 	HealthBarComponent = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar Component"));
 	HealthBarComponent->SetupAttachment(GetRootComponent());
+	HealthBarComponent->SetVisibility(false);
 
 	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
@@ -90,6 +91,16 @@ void AEnemy::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 	
 	Super::GetHit(OtherActor, ImpactPoint);
 
+}
+
+void AEnemy::BeLockedOnTo()
+{
+	HealthBarComponent->SetVisibility(true);
+}
+
+void AEnemy::BeLockedOff()
+{
+	HealthBarComponent->SetVisibility(false);
 }
 
 float AEnemy::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

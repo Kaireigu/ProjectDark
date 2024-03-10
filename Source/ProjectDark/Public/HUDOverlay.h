@@ -7,6 +7,7 @@
 #include "HUDOverlay.generated.h"
 
 class UProgressBar;
+class UEditableTextBox;
 
 /**
  * 
@@ -20,10 +21,18 @@ public:
 
 	void SetHealthBarPercent(const float& Percent, const float& MaxHealth);
 	void SetStaminaBarPercent(const float& Percent, const float& MaxStamina);
+	void SetInteractTextBox(const FString& ItemText);
+	void ClearInteractTextBox();
+	void HideInteractTextBox();
+	void ShowInteractTextBox();
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthProgressBar;
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* StaminaProgressBar;
+
+	UPROPERTY(meta = (BindWidget))
+	UEditableTextBox* InteractTextBox;
+
 };

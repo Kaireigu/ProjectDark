@@ -8,6 +8,7 @@
 
 class UStaticMeshComponent;
 class USphereComponent;
+class APlayerCharacter;
 
 enum class EItemStatus : uint8
 {
@@ -37,6 +38,9 @@ protected:
 	UPROPERTY(EditAnywhere)
 	USphereComponent* SphereComponent;
 
+	UPROPERTY(EditAnywhere, Category = "HUD")
+	FString InteractText = FString("Text Not Set");
+
 	UFUNCTION()
 	virtual void OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
@@ -47,10 +51,12 @@ private:
 
 	EItemStatus ItemState = EItemStatus::EIS_Unequipped;
 
+	APlayerCharacter* PlayerCharacter;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-	FORCEINLINE void SetItemStateEquipped() { ItemState = EItemStatus::EIS_Equipped; }
+	void SetItemStateEquipped();
 	FORCEINLINE bool IsItemUnequipped() { return ItemState == EItemStatus::EIS_Unequipped; }
 
 };

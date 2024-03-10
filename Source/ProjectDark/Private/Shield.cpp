@@ -6,4 +6,5 @@
 AShield::AShield()
 {
 	Tags.AddUnique("Shield");
+	InteractText = FString("Pick Up Shield");
 }

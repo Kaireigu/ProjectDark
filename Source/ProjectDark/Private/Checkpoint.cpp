@@ -8,6 +8,7 @@
 ACheckpoint::ACheckpoint()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	InteractText = FString("Rest At Checkpoint");
 
 	CapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Capsule"));
 	CapsuleComponent->SetupAttachment(GetRootComponent());
@@ -29,6 +30,8 @@ void ACheckpoint::BeginPlay()
 
 void ACheckpoint::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	Super::OnSphereBeginOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+
 	if (OtherComp->ComponentHasTag("LockOnBox")) { return; }
 
 	IInteractInterface* InteractInterface = Cast<IInteractInterface>(OtherActor);
@@ -41,6 +44,8 @@ void ACheckpoint::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 
 void ACheckpoint::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
+	Super::OnSphereEndOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex);
+
 	if (OtherComp->ComponentHasTag("LockOnBox")) { return; }
 
 	IInteractInterface* InteractInterface = Cast<IInteractInterface>(OtherActor);
