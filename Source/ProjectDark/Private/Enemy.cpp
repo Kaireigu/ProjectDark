@@ -19,29 +19,11 @@
 AEnemy::AEnemy()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	Tags.AddUnique(FName("Hitable"));
-	Tags.AddUnique(FName("Enemy"));
-	Tags.AddUnique(FName("Lockable"));
+	AddInitialTags();
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
-	PawnSensingComponent = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("Pawn Sensing Component"));
-	PawnSensingComponent->SightRadius = VisualRadius;
-	PawnSensingComponent->SetPeripheralVisionAngle(PeripheralVisionAngle);
-
-	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
-	SetRootComponent(GetCapsuleComponent());
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
-
-	HealthBarComponent = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar Component"));
-	HealthBarComponent->SetupAttachment(GetRootComponent());
-	HealthBarComponent->SetVisibility(false);
-
-	GetMesh()->SetGenerateOverlapEvents(true);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
+	InitialiseComponents();
 }
 
 void AEnemy::Tick(float DeltaTime)
@@ -294,4 +276,32 @@ bool AEnemy::InTargetRange(AActor* Target, const double& Radius)
 	const double DistanceToTarget = (Target->GetActorLocation() - GetActorLocation()).Size();
 
 	return DistanceToTarget <= Radius;
+}
+
+void AEnemy::AddInitialTags()
+{
+	Tags.AddUnique(FName("Hitable"));
+	Tags.AddUnique(FName("Enemy"));
+	Tags.AddUnique(FName("Lockable"));
+}
+
+void AEnemy::InitialiseComponents()
+{
+	PawnSensingComponent = CreateDefaultSubobject<UPawnSensingComponent>(TEXT("Pawn Sensing Component"));
+	PawnSensingComponent->SightRadius = VisualRadius;
+	PawnSensingComponent->SetPeripheralVisionAngle(PeripheralVisionAngle);
+
+	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
+	SetRootComponent(GetCapsuleComponent());
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
+
+	HealthBarComponent = CreateDefaultSubobject<UHealthBarComponent>(TEXT("Health Bar Component"));
+	HealthBarComponent->SetupAttachment(GetRootComponent());
+	HealthBarComponent->SetVisibility(false);
+
+	GetMesh()->SetGenerateOverlapEvents(true);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
 }

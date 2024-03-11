@@ -212,6 +212,7 @@ private:
 	bool IsUnequipped();
 	bool IsEquippedSwordAndShield();
 	bool IsShieldEquipped();
+	bool IsNotHitReacting();
 
 	bool bCanCombo = false;
 	bool bComboActive = false;
@@ -220,6 +221,14 @@ private:
 
 	void ReceiveHealth(const float& HealAmount);
 	void ReceiveDamage(const float& DamageAmount);
+
+	void AddActorTags();
+	void SetupHUD();
+	void BindDelegateFunctions();
+	void PickUpWeapon();
+	void PickUpShield();
+	void PickUpPotion();
+	void CheckCanSitAtCheckpoint();
 
 	UPROPERTY(VisibleInstanceOnly)
 	TArray<AActor*> LockableEnemies;

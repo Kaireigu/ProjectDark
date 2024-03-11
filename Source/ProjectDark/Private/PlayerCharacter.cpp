@@ -33,8 +33,7 @@ APlayerCharacter::APlayerCharacter()
 
 	InitialiseComponents();
 
-	Tags.AddUnique(FName("Hitable"));
-	Tags.AddUnique(FName("PlayerCharacter"));
+	AddActorTags();
 
 }
 
@@ -64,7 +63,7 @@ void APlayerCharacter::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 void APlayerCharacter::GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint)
 {
 
-	if (ActionState != EActionState::EAS_HitReacting)
+	if (IsNotHitReacting())
 	{
 		Super::GetHitWithDamage(DamageAmount, ImpactPoint);
 		UGameplayStatics::ApplyDamage(this, DamageAmount, nullptr, nullptr, UDamageType::StaticClass());
@@ -114,27 +113,9 @@ void APlayerCharacter::BeginPlay()
 
 	InitialiseSubsystem();
 
-	LockOnBox->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnLockBoxBeginOverlap);
-	LockOnBox->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::OnLockBoxEndOverlap);
+	BindDelegateFunctions();
 
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
-
-	if (PlayerController)
-	{
-		AProjectDarkHUD* ProjectDarkHUD = Cast<AProjectDarkHUD>(PlayerController->GetHUD());
-
-		if (ProjectDarkHUD)
-		{
-			HUDOverlay = ProjectDarkHUD->GetHUDOverlay();
-
-			if (HUDOverlay && AttributeComponent)
-			{
-				HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
-				HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
-				HUDOverlay->HideInteractTextBox();
-			}
-		}
-	}
+	SetupHUD();
 }
 
 void APlayerCharacter::SetCanCombo(bool CanCombo)
@@ -423,116 +404,13 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 		ActionState = EActionState::EAS_Equipping;
 	}
 
-	if (EquippedWeapon == nullptr && OverlappingItem)
-	{
-		if (OverlappingItem->ActorHasTag("Weapon"))
-		{
-			EquippedWeapon = Cast<AWeapon>(OverlappingItem);
+	PickUpWeapon();
 
-			if (EquippedWeapon && EquippedWeapon->IsItemUnequipped())
-			{
-				EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
-				EquippedWeapon->SetOwner(this);
-				EquippedWeapon->SetInstigator(this);
-				EquippedWeapon->SetItemStateEquipped();
+	PickUpShield();
 
-				if (IsUnequipped())
-				{
-					CharacterState = ECharacterState::ECS_EquippedOneHanded;
-				}
-				else if (IsShieldEquipped())
-				{
-					CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
-				}
+	PickUpPotion();
 
-			}
-			else
-			{
-				EquippedWeapon = nullptr;
-			}
-		}
-
-	}
-
-	if (EquippedShield == nullptr && OverlappingItem)
-	{
-		if (OverlappingItem->ActorHasTag("Shield"))
-		{
-			EquippedShield = Cast<AShield>(OverlappingItem);
-
-			if (EquippedShield && EquippedShield->IsItemUnequipped())
-			{
-				EquippedShield->AttachMeshToSocket(GetMesh(), FName("LeftForeArmSocket"));
-				EquippedShield->SetOwner(this);
-				EquippedShield->SetItemStateEquipped();
-
-				if (IsUnequipped())
-				{
-					CharacterState = ECharacterState::ECS_EquippedShield;
-				}
-				else if (IsEquippedWithOneHandedWeapon())
-				{
-					CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
-				}
-			}
-			else
-			{
-				EquippedShield = nullptr;
-			}
-		}
-	}
-
-	if (EquippedPotion == nullptr && OverlappingItem)
-	{
-		if (OverlappingItem->ActorHasTag("Potion"))
-		{
-			EquippedPotion = Cast<APotion>(OverlappingItem);
-
-			if (EquippedPotion && EquippedPotion->IsItemUnequipped())
-			{
-				EquippedPotion->AttachMeshToSocket(GetMesh(), FName("HipSocket"));
-				EquippedPotion->SetOwner(this);
-				EquippedPotion->SetItemStateEquipped();
-			}
-			else
-			{
-				EquippedPotion = nullptr;
-			}
-		}
-	}
-
-	if (bCanInteractWithCheckpoint && ActionState != EActionState::EAS_Interacting)
-	{
-		ActionState = EActionState::EAS_Interacting;
-		PlayMontage(SitMontage, FName("Default"));
-		ClearHUDInteractText();
-
-		if (AttributeComponent)
-		{
-			ReceiveHealth(AttributeComponent->GetMaxHealth());
-		}
-
-		if (IsEquippedSwordAndShield())
-		{
-			SetWeaponSocketOnEquipping();
-			SetShieldSocketOnEquipping();
-		}
-		else if (IsEquippedWithOneHandedWeapon())
-		{
-			SetWeaponSocketOnEquipping();
-		}
-		else if (IsShieldEquipped())
-		{
-			SetShieldSocketOnEquipping();
-		}
-	}
-	else if (bCanInteractWithCheckpoint && ActionState == EActionState::EAS_Interacting)
-	{
-		PlayMontage(SitMontage, FName("StandingUp"));
-		SetWeaponSocketOnEquipping();
-		SetShieldSocketOnEquipping();
-		
-	}
+	CheckCanSitAtCheckpoint();
 
 }
 
@@ -559,8 +437,9 @@ void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 
 	if (IsMoving())
 	{
-		//FVector RollDirection = GetVelocity().GetSafeNormal();
-		//SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorForwardVector(), RollDirection));
+		FVector RollDirection = GetVelocity().GetSafeNormal();
+		FRotator NewRotation = RollDirection.Rotation();
+		SetActorRotation(NewRotation);
 		PlayMontage(RollMontage, FName("Roll1"));
 		CreateFields(GetActorLocation());
 	}
@@ -778,8 +657,11 @@ void APlayerCharacter::LookAtCurrentTarget(float& DeltaTime)
 		const FVector RaisedEnemyLocation = FVector(EnemyLocation.X, EnemyLocation.Y, EnemyLocation.Z + 10.f);
 		const FVector RaisedCameraLocation = Camera->GetComponentLocation() + FVector(0.f, 0.f, CameraHeightLockedOn);
 		const FRotator CameraLookAtRotation = UKismetMathLibrary::FindLookAtRotation(RaisedCameraLocation, RaisedEnemyLocation);
-		const FRotator FaceEnemyRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), EnemyLocation);
-		SetActorRotation(FRotator(GetActorRotation().Pitch, UKismetMathLibrary::Lerp(FaceEnemyRotation.Yaw, GetActorRotation().Yaw, DeltaTime), GetActorRotation().Roll));
+		if (ActionState != EActionState::EAS_Dodging)
+		{
+			const FRotator FaceEnemyRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), EnemyLocation);
+			SetActorRotation(FRotator(GetActorRotation().Pitch, UKismetMathLibrary::Lerp(FaceEnemyRotation.Yaw, GetActorRotation().Yaw, DeltaTime), GetActorRotation().Roll));
+		}
 		Controller->SetControlRotation(UKismetMathLibrary::RLerp(CameraLookAtRotation, GetControlRotation(), DeltaTime, true));
 	}
 }
@@ -864,19 +746,31 @@ void APlayerCharacter::CheckLockOnTargetDistance()
 	{
 		SetLockOffValues();
 	}
-	
-	if (EnemyTargetLeft && UKismetMathLibrary::VSizeXY(EnemyTargetLeft->GetActorLocation() - GetActorLocation()) > 500.f && GetTheta(GetActorForwardVector(), EnemyTargetLeft->GetActorLocation()) > 135.f
-		|| EnemyTargetLeft && UKismetMathLibrary::VSizeXY(EnemyTargetLeft->GetActorLocation() - GetActorLocation()) > 500.f && GetTheta(GetActorForwardVector(), EnemyTargetLeft->GetActorLocation()) < -135.f)
+
+	if (EnemyTargetLeft)
 	{
-		LockableEnemies.Remove(EnemyTargetLeft);
-		EnemyTargetLeft = nullptr;
+		double ToEnemyLeft = UKismetMathLibrary::VSizeXY(EnemyTargetLeft->GetActorLocation() - GetActorLocation());
+		double AngleBetweenThisAndEnemyLeft = GetTheta(GetActorForwardVector(), EnemyTargetLeft->GetActorLocation());
+
+		if (ToEnemyLeft > 500.f && AngleBetweenThisAndEnemyLeft > 135.f
+			|| ToEnemyLeft > 500.f && AngleBetweenThisAndEnemyLeft < -135.f)
+		{
+			LockableEnemies.Remove(EnemyTargetLeft);
+			EnemyTargetLeft = nullptr;
+		}
 	}
 
-	if (EnemyTargetRight && UKismetMathLibrary::VSizeXY(EnemyTargetRight->GetActorLocation() - GetActorLocation()) > 500.f && GetTheta(GetActorForwardVector(), EnemyTargetRight->GetActorLocation()) > 135.f
-		|| EnemyTargetRight && UKismetMathLibrary::VSizeXY(EnemyTargetRight->GetActorLocation() - GetActorLocation()) > 500.f && GetTheta(GetActorForwardVector(), EnemyTargetRight->GetActorLocation()) < -135.f)
+	if (EnemyTargetRight)
 	{
-		LockableEnemies.Remove(EnemyTargetRight);
-		EnemyTargetRight = nullptr;
+		double ToEnemyRight = UKismetMathLibrary::VSizeXY(EnemyTargetRight->GetActorLocation() - GetActorLocation());
+		double AngleBetweenThisAndEnemyRight = GetTheta(GetActorForwardVector(), EnemyTargetRight->GetActorLocation());
+
+		if (ToEnemyRight > 500.f && AngleBetweenThisAndEnemyRight > 135.f
+			|| ToEnemyRight > 500.f && AngleBetweenThisAndEnemyRight < -135.f)
+		{
+			LockableEnemies.Remove(EnemyTargetRight);
+			EnemyTargetRight = nullptr;
+		}
 	}
 }
 
@@ -902,7 +796,7 @@ void APlayerCharacter::OnEnemyDeath(AActor* Enemy)
 	if (CurrentEnemyTarget == Enemy)
 	{
 		SetLockOffValues();
-		
+		CurrentEnemyTargetHitInterface = nullptr;
 	}
 }
 
@@ -974,6 +868,11 @@ bool APlayerCharacter::IsShieldEquipped()
 	return CharacterState == ECharacterState::ECS_EquippedShield;
 }
 
+bool APlayerCharacter::IsNotHitReacting()
+{
+	return ActionState != EActionState::EAS_HitReacting;
+}
+
 void APlayerCharacter::ReceiveHealth(const float& HealAmount)
 {
 	if (AttributeComponent)
@@ -1000,4 +899,160 @@ void APlayerCharacter::ReceiveDamage(const float& DamageAmount)
 	}
 }
 
+void APlayerCharacter::AddActorTags()
+{
+	Tags.AddUnique(FName("Hitable"));
+	Tags.AddUnique(FName("PlayerCharacter"));
+}
+
+void APlayerCharacter::SetupHUD()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	if (PlayerController)
+	{
+		AProjectDarkHUD* ProjectDarkHUD = Cast<AProjectDarkHUD>(PlayerController->GetHUD());
+
+		if (ProjectDarkHUD)
+		{
+			HUDOverlay = ProjectDarkHUD->GetHUDOverlay();
+
+			if (HUDOverlay && AttributeComponent)
+			{
+				HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
+				HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
+				HUDOverlay->HideInteractTextBox();
+			}
+		}
+	}
+}
+
+void APlayerCharacter::BindDelegateFunctions()
+{
+	LockOnBox->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OnLockBoxBeginOverlap);
+	LockOnBox->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::OnLockBoxEndOverlap);
+}
+
+void APlayerCharacter::PickUpWeapon()
+{
+	if (EquippedWeapon == nullptr && OverlappingItem)
+	{
+		if (OverlappingItem->ActorHasTag("Weapon"))
+		{
+			EquippedWeapon = Cast<AWeapon>(OverlappingItem);
+
+			if (EquippedWeapon && EquippedWeapon->IsItemUnequipped())
+			{
+				EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+				EquippedWeapon->SetOwner(this);
+				EquippedWeapon->SetInstigator(this);
+				EquippedWeapon->SetItemStateEquipped();
+
+				if (IsUnequipped())
+				{
+					CharacterState = ECharacterState::ECS_EquippedOneHanded;
+				}
+				else if (IsShieldEquipped())
+				{
+					CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
+				}
+
+			}
+			else
+			{
+				EquippedWeapon = nullptr;
+			}
+		}
+
+	}
+}
+
+void APlayerCharacter::PickUpShield()
+{
+	if (EquippedShield == nullptr && OverlappingItem)
+	{
+		if (OverlappingItem->ActorHasTag("Shield"))
+		{
+			EquippedShield = Cast<AShield>(OverlappingItem);
+
+			if (EquippedShield && EquippedShield->IsItemUnequipped())
+			{
+				EquippedShield->AttachMeshToSocket(GetMesh(), FName("LeftForeArmSocket"));
+				EquippedShield->SetOwner(this);
+				EquippedShield->SetItemStateEquipped();
+
+				if (IsUnequipped())
+				{
+					CharacterState = ECharacterState::ECS_EquippedShield;
+				}
+				else if (IsEquippedWithOneHandedWeapon())
+				{
+					CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
+				}
+			}
+			else
+			{
+				EquippedShield = nullptr;
+			}
+		}
+	}
+}
+
+void APlayerCharacter::PickUpPotion()
+{
+	if (EquippedPotion == nullptr && OverlappingItem)
+	{
+		if (OverlappingItem->ActorHasTag("Potion"))
+		{
+			EquippedPotion = Cast<APotion>(OverlappingItem);
+
+			if (EquippedPotion && EquippedPotion->IsItemUnequipped())
+			{
+				EquippedPotion->AttachMeshToSocket(GetMesh(), FName("HipSocket"));
+				EquippedPotion->SetOwner(this);
+				EquippedPotion->SetItemStateEquipped();
+			}
+			else
+			{
+				EquippedPotion = nullptr;
+			}
+		}
+	}
+}
+
+void APlayerCharacter::CheckCanSitAtCheckpoint()
+{
+	if (bCanInteractWithCheckpoint && ActionState != EActionState::EAS_Interacting)
+	{
+		ActionState = EActionState::EAS_Interacting;
+		PlayMontage(SitMontage, FName("Default"));
+		ClearHUDInteractText();
+
+		if (AttributeComponent)
+		{
+			ReceiveHealth(AttributeComponent->GetMaxHealth());
+		}
+
+		if (IsEquippedSwordAndShield())
+		{
+			SetWeaponSocketOnEquipping();
+			SetShieldSocketOnEquipping();
+		}
+		else if (IsEquippedWithOneHandedWeapon())
+		{
+			SetWeaponSocketOnEquipping();
+		}
+		else if (IsShieldEquipped())
+		{
+			SetShieldSocketOnEquipping();
+		}
+	}
+	else if (bCanInteractWithCheckpoint && ActionState == EActionState::EAS_Interacting)
+	{
+		PlayMontage(SitMontage, FName("StandingUp"));
+		SetWeaponSocketOnEquipping();
+		SetShieldSocketOnEquipping();
+
+	}
+}
 
