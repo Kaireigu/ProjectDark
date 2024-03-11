@@ -112,6 +112,8 @@ private:
 	void Attack();
 
 	bool InTargetRange(AActor* Target, const double& Radius);
+	void AddInitialTags();
+	void InitialiseComponents();
 
 	UPROPERTY(VisibleInstanceOnly)
 	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
