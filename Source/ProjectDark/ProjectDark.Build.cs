@@ -8,7 +8,7 @@ public class ProjectDark : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "UMG", "GeometryCollectionEngine", "FieldSystemEngine" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "UMG", "GeometryCollectionEngine", "FieldSystemEngine", "MotionWarping" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

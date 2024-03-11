@@ -16,6 +16,7 @@ class UPawnSensingComponent;
 class AWeapon;
 class AProjectile;
 class UHealthBarComponent;
+class UMotionWarpingComponent;
 
 UCLASS()
 class PROJECTDARK_API AEnemy : public ABaseCharacter
@@ -50,10 +51,16 @@ protected:
 	void FireArrow();
 
 	UPROPERTY(EditAnywhere, Category = "Weapon")
+	double WarpTargetDistance = 75.f;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	TSubclassOf<AWeapon> WeaponClass;
 
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	bool HasRangedWeapon = false;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	bool HasMeleeWeapon = false;
 
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	TSubclassOf<AProjectile> ProjectileClass;
@@ -72,11 +79,17 @@ protected:
 	UPROPERTY(EditAnywhere)
 	UPawnSensingComponent* PawnSensingComponent;
 
+	UPROPERTY()
+	UMotionWarpingComponent* MotionWarpingComponent;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* ArcherAttackMontage;
+
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* SwordAttackMontage;
 
 	UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
 	AActor* PatrolTarget;
@@ -114,6 +127,7 @@ private:
 	bool InTargetRange(AActor* Target, const double& Radius);
 	void AddInitialTags();
 	void InitialiseComponents();
+	FVector GetTranslationWarpTarget();
 
 	UPROPERTY(VisibleInstanceOnly)
 	EEnemyState EnemyState = EEnemyState::EES_Patrolling;

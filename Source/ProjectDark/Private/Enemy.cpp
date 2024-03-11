@@ -15,6 +15,7 @@
 #include "HealthBarComponent.h"
 #include "HealthBar.h"
 #include "Attributes.h"
+#include "MotionWarpingComponent.h"
 
 AEnemy::AEnemy()
 {
@@ -32,6 +33,11 @@ void AEnemy::Tick(float DeltaTime)
 
 	CheckDistanceToCombatTarget();
 	UpdatePatrolTarget();
+
+	if (CombatTarget && MotionWarpingComponent)
+	{
+		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocation(FName("CombatTarget"), GetTranslationWarpTarget());
+	}
 
 }
 
@@ -115,14 +121,14 @@ void AEnemy::BeginPlay()
 	{
 		EquippedWeapon = World->SpawnActor<AWeapon>(WeaponClass, GetActorLocation(), GetActorRotation());
 
-		if (EquippedWeapon && HasRangedWeapon == false)
+		if (EquippedWeapon && HasRangedWeapon == false && HasMeleeWeapon == false)
 		{
 			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("LeftArmSocket"));
 			EquippedWeapon->SetOwner(this);
 			EquippedWeapon->SetInstigator(this);
 			EquippedWeapon->SetActorHiddenInGame(true);
 			EquippedWeapon->SetItemStateEquipped();
-			EnemyEquipState = ECharacterState::ECS_EquippedOneHanded;
+			EnemyEquipState = ECharacterState::ECS_Unequipped;
 		}
 		else if (EquippedWeapon && HasRangedWeapon)
 		{
@@ -131,6 +137,14 @@ void AEnemy::BeginPlay()
 			EquippedWeapon->SetInstigator(this);
 			EquippedWeapon->SetItemStateEquipped();
 			EnemyEquipState = ECharacterState::ECS_EquippedLongbow;
+		}
+		else if (EquippedWeapon && HasMeleeWeapon)
+		{
+			EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+			EquippedWeapon->SetOwner(this);
+			EquippedWeapon->SetInstigator(this);
+			EquippedWeapon->SetItemStateEquipped();
+			EnemyEquipState = ECharacterState::ECS_EquippedOneHanded;
 		}
 	}
 
@@ -237,9 +251,15 @@ void AEnemy::Attack()
 {
 	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead) { return; }
 	
-	if (AttackMontage && EnemyEquipState == ECharacterState::ECS_EquippedOneHanded)
+	if (AttackMontage && EnemyEquipState == ECharacterState::ECS_Unequipped)
 	{
 		EnemyState = EEnemyState::EES_Attacking;
+
+		if (CombatTarget)
+		{
+			CombatTargetLocationOnAttack = CombatTarget->GetActorLocation();
+		}
+
 		PlayMontage(AttackMontage, FName("Attack1"));
 	}
 	else if (ArcherAttackMontage && EnemyEquipState == ECharacterState::ECS_EquippedLongbow)
@@ -252,6 +272,17 @@ void AEnemy::Attack()
 		}
 
 		PlayMontage(ArcherAttackMontage, FName("DrawArrow"));
+	}
+	else if (SwordAttackMontage && EnemyEquipState == ECharacterState::ECS_EquippedOneHanded)
+	{
+		EnemyState = EEnemyState::EES_Attacking;
+
+		if (CombatTarget)
+		{
+			CombatTargetLocationOnAttack = CombatTarget->GetActorLocation();
+		}
+
+		PlayMontage(SwordAttackMontage, FName("Default"));
 	}
 }
 
@@ -270,6 +301,7 @@ void AEnemy::FireArrow()
 		
 	}
 }
+
 
 bool AEnemy::InTargetRange(AActor* Target, const double& Radius)
 {
@@ -304,4 +336,18 @@ void AEnemy::InitialiseComponents()
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
+
+	MotionWarpingComponent = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("Motion Warping Component"));
+}
+
+FVector AEnemy::GetTranslationWarpTarget()
+{
+	if (CombatTarget == nullptr) { return FVector(); }
+
+	const FVector CombatTargetLocation = CombatTarget->GetActorLocation();
+	const FVector Location = GetActorLocation();
+	FVector TargetToMe = (Location - CombatTargetLocation).GetSafeNormal();
+	TargetToMe *= WarpTargetDistance;
+
+	return CombatTargetLocation + TargetToMe;
 }
