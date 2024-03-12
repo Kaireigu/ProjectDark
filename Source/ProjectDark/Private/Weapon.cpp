@@ -65,6 +65,9 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
 	if (HitResult.GetActor())
 	{
+		if (HitResult.GetActor()->ActorHasTag(FName("Enemy")) && GetOwner()->ActorHasTag(FName("Enemy"))) { return; }
+
+		IHitInterface* HittableActor = Cast<IHitInterface>(HitResult.GetActor());
 
 		if (HitResult.GetActor()->ActorHasTag(FName("Hitable")))
 		{
@@ -78,12 +81,11 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 					if (EnemyCharacter->IsFacing(GetOwner()))
 					{ 
 						ThisCharacter->PlayHitReactMontage(HitResult.ImpactPoint);
+						HittableActor->UseStamina(WeaponDamage / 2);
 						return; 
 					}
 				}
 			}
-
-			IHitInterface* HittableActor = Cast<IHitInterface>(HitResult.GetActor());
 
 			if (HittableActor)
 			{

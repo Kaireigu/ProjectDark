@@ -14,3 +14,8 @@ void IHitInterface::BeLockedOff()
 {
 
 }
+
+void IHitInterface::UseStamina(const float& StaminaAmount)
+{
+
+}
