@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
+#include "CharacterTypes.h"
 #include "AnimInstanceMaynard.generated.h"
 
 
@@ -20,8 +21,12 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	AEnemy* Enemy;
+
+	UPROPERTY(BlueprintReadOnly)
+	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
 	
 private:
 
 	void NativeInitializeAnimation() override;
+	void NativeUpdateAnimation(float DeltaTime) override;
 };
