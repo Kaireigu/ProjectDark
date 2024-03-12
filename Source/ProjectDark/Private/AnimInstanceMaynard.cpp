@@ -8,3 +8,12 @@ void UAnimInstanceMaynard::NativeInitializeAnimation()
 {
 	Enemy = Cast<AEnemy>(TryGetPawnOwner());
 }
+
+void UAnimInstanceMaynard::NativeUpdateAnimation(float DeltaTime)
+{
+
+	if (Enemy)
+	{
+		EnemyState = Enemy->GetEnemyState();
+	}
+}

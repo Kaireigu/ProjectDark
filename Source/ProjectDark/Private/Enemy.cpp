@@ -11,6 +11,7 @@
 #include "Perception/PawnSensingComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Weapon.h"
+#include "Shield.h"
 #include "Projectile.h"
 #include "HealthBarComponent.h"
 #include "HealthBar.h"
@@ -120,6 +121,7 @@ void AEnemy::BeginPlay()
 	if (World && WeaponClass)
 	{
 		EquippedWeapon = World->SpawnActor<AWeapon>(WeaponClass, GetActorLocation(), GetActorRotation());
+		EquippedShield = World->SpawnActor<AShield>(ShieldClass, GetActorLocation(), GetActorRotation());
 
 		if (EquippedWeapon && HasRangedWeapon == false && HasMeleeWeapon == false)
 		{
@@ -146,6 +148,15 @@ void AEnemy::BeginPlay()
 			EquippedWeapon->SetItemStateEquipped();
 			EnemyEquipState = ECharacterState::ECS_EquippedOneHanded;
 		}
+		
+		if (EquippedShield && HasShield)
+		{
+			EquippedShield->AttachMeshToSocket(GetMesh(), FName("LeftForeArmSocket"));
+			EquippedShield->SetOwner(this);
+			EquippedShield->SetInstigator(this);
+			EquippedShield->SetItemStateEquipped();
+			EnemyEquipState = ECharacterState::ECS_EquippedSwordAndShield;
+		}
 	}
 
 	if (PawnSensingComponent)
@@ -166,7 +177,9 @@ void AEnemy::Die()
 	Super::Die();
 	EnemyState = EEnemyState::EES_Dead;
 	EnemyDied.Broadcast(this);
-	EquippedWeapon->Destroy();
+
+	if (EquippedWeapon) { EquippedWeapon->Destroy(); }
+	if (EquippedShield) { EquippedShield->Destroy(); }
 }
 
 void AEnemy::PlayHitReactMontage(const FVector& ImpactPoint)
@@ -201,16 +214,17 @@ void AEnemy::MontageEnd()
 	if (EnemyState == EEnemyState::EES_Dead) { return; }
 
 	EnemyState = EEnemyState::EES_Patrolling;
+	Tags.Remove(FName("Blocking"));
 }
 
 void AEnemy::MoveToTarget(AActor* Target)
 {
-	if (EnemyController == nullptr || Target == nullptr || EnemyState == EEnemyState::EES_Dead || EnemyState == EEnemyState::EES_Attacking) { return; }
+	if (EnemyController == nullptr || Target == nullptr || EnemyState == EEnemyState::EES_Dead || EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking) { return; }
 
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(Target);
 
-	if (CombatTarget && HasRangedWeapon)
+	if (CombatTarget)
 	{
 		MoveRequest.SetAcceptanceRadius(AcceptanceRadius);
 	}
@@ -223,25 +237,52 @@ void AEnemy::MoveToTarget(AActor* Target)
 
 void AEnemy::CheckDistanceToCombatTarget()
 {
-	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead) { return; }
+	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking || EnemyState == EEnemyState::EES_Dead) { return; }
 
 	if (CombatTarget)
 	{
 		if (!InTargetRange(CombatTarget, VisualRadius))
 		{
 			CombatTarget = nullptr;
-			GetCharacterMovement()->MaxWalkSpeed = 150.f;
+			GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 			EnemyState = EEnemyState::EES_Patrolling;
 		}
 		else if (InTargetRange(CombatTarget, AttackRadius))
 		{
-			SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation()));
-			Attack();
+			if (HasShield)
+			{
+				int32 Selection = FMath::RandRange(0, 2);
+
+				switch (Selection)
+				{
+				case 0:
+					Attack();
+					break;
+
+				case 1:
+					Block();
+					break;
+
+				case 2:
+					Strafe();
+					break;
+
+				default:
+					break;
+				}
+			}
+			else
+			{
+				Attack();
+			}
+
+
 		}
-		else if (InTargetRange(CombatTarget, VisualRadius))
+		else if (InTargetRange(CombatTarget, VisualRadius) && InTargetRange(CombatTarget, AttackRadius) == false)
 		{
-			GetCharacterMovement()->MaxWalkSpeed = 300.f;
+			GetCharacterMovement()->MaxWalkSpeed = ChaseSpeed;
 			EnemyState = EEnemyState::EES_Chasing;
+			Tags.Remove(FName("Blocking"));
 			MoveToTarget(CombatTarget);
 		}
 	}
@@ -251,14 +292,11 @@ void AEnemy::Attack()
 {
 	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead) { return; }
 	
+	SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation()));
+
 	if (AttackMontage && EnemyEquipState == ECharacterState::ECS_Unequipped)
 	{
 		EnemyState = EEnemyState::EES_Attacking;
-
-		if (CombatTarget)
-		{
-			CombatTargetLocationOnAttack = CombatTarget->GetActorLocation();
-		}
 
 		PlayMontage(AttackMontage, FName("Attack1"));
 	}
@@ -266,24 +304,40 @@ void AEnemy::Attack()
 	{
 		EnemyState = EEnemyState::EES_Attacking;
 
-		if (CombatTarget)
-		{
-			CombatTargetLocationOnAttack = CombatTarget->GetActorLocation();
-		}
-
 		PlayMontage(ArcherAttackMontage, FName("DrawArrow"));
 	}
 	else if (SwordAttackMontage && EnemyEquipState == ECharacterState::ECS_EquippedOneHanded)
 	{
 		EnemyState = EEnemyState::EES_Attacking;
 
-		if (CombatTarget)
-		{
-			CombatTargetLocationOnAttack = CombatTarget->GetActorLocation();
-		}
-
 		PlayMontage(SwordAttackMontage, FName("Default"));
 	}
+	else if (ThrustAttackMontage && EnemyEquipState == ECharacterState::ECS_EquippedSwordAndShield)
+	{
+		EnemyState = EEnemyState::EES_Attacking;
+
+		Tags.Remove(FName("Blocking"));
+		PlayMontage(ThrustAttackMontage, FName("Default"));
+	}
+}
+
+void AEnemy::Block()
+{
+	if (EnemyState == EEnemyState::EES_Blocking) { return; }
+
+	SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation()));
+
+	if (BlockMontage)
+	{
+		PlayMontage(BlockMontage, FName("Default"));
+		EnemyState = EEnemyState::EES_Blocking;
+		Tags.AddUnique(FName("Blocking"));
+	}
+}
+
+void AEnemy::Strafe()
+{
+	// Implement Strafe needs doing.
 }
 
 void AEnemy::FireArrow()
@@ -296,7 +350,7 @@ void AEnemy::FireArrow()
 
 		if (Arrow && CombatTarget)
 		{
-			Arrow->FireProjectile(CombatTargetLocationOnAttack, GetActorLocation());
+			Arrow->FireProjectile(CombatTarget->GetActorLocation(), GetActorLocation());
 		}
 		
 	}

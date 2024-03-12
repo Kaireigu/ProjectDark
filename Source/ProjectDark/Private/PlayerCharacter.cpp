@@ -142,6 +142,11 @@ void APlayerCharacter::AttackEnd()
 void APlayerCharacter::SetUnoccupied()
 {
 	ActionState = EActionState::EAS_Unoccupied;
+
+	if (EquippedWeapon)
+	{
+		EquippedWeapon->SetWeaponCollision(false);
+	}
 }
 
 void APlayerCharacter::SetWeaponSocketOnEquipping()
