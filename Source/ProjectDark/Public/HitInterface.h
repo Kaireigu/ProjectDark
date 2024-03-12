@@ -14,7 +14,7 @@ class UHitInterface : public UInterface
 };
 
 /**
- * 
+ *
  */
 class PROJECTDARK_API IHitInterface
 {
@@ -27,4 +27,5 @@ public:
 	virtual void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) = 0;
 	virtual void BeLockedOnTo();
 	virtual void BeLockedOff();
+	virtual void UseStamina(const float& StaminaAmount);
 };

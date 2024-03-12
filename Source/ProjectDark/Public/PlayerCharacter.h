@@ -71,6 +71,8 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void AttachPotionToHip();
 
+	void UseStamina(const float& StaminaAmount) override;
+
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
 
@@ -82,6 +84,18 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = Movement)
 	float OrientRotationRateYaw = 1080.f;
+
+	UPROPERTY(EditAnywhere, Category = "Stamina Cost")
+	float LightAttackStaminaCost = 20.f;
+
+	UPROPERTY(EditAnywhere, Category = "Stamina Cost")
+	float BackstepStaminaCost = 20.f;
+
+	UPROPERTY(EditAnywhere, Category = "Stamina Cost")
+	float RollStaminaCost = 30.f;
+
+	UPROPERTY(EditAnywhere, Category = "Stamina Cost")
+	float BlockingStaminaCost = 30.f;
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputMappingContext* InputMappingContext;
@@ -221,9 +235,13 @@ private:
 
 	void ReceiveHealth(const float& HealAmount);
 	void ReceiveDamage(const float& DamageAmount);
+	void StartStaminaRecharge();
+	void StopStaminaRecharge();
+	float GetStamina();
 
 	void AddActorTags();
 	void SetupHUD();
+	void UpdateHUD(const float& DeltaTime);
 	void BindDelegateFunctions();
 	void PickUpWeapon();
 	void PickUpShield();
@@ -261,7 +279,7 @@ private:
 	UPROPERTY()
 	UHUDOverlay* HUDOverlay;
 
-public:	
+public:
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 	FORCEINLINE ECharacterState GetCharacterState() { return CharacterState; }
 	FORCEINLINE EActionState GetActionState() { return ActionState; }

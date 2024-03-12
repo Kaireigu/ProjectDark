@@ -41,6 +41,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UpdateHUD(DeltaTime);
 	UpdateLockOnTarget(DeltaTime);
 
 }
@@ -55,7 +56,7 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 
 void APlayerCharacter::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 {
-	
+
 	Super::GetHit(OtherActor, ImpactPoint);
 
 }
@@ -134,7 +135,7 @@ void APlayerCharacter::AttackEnd()
 	}
 	else
 	{
-		ActionState = EActionState::EAS_Unoccupied;
+		SetUnoccupied();
 		AnimInstance->StopAllMontages(0.25f);
 	}
 }
@@ -142,6 +143,7 @@ void APlayerCharacter::AttackEnd()
 void APlayerCharacter::SetUnoccupied()
 {
 	ActionState = EActionState::EAS_Unoccupied;
+	StartStaminaRecharge();
 
 	if (EquippedWeapon)
 	{
@@ -421,7 +423,7 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 
 void APlayerCharacter::Attack(const FInputActionValue& value)
 {
-	if (IsUnequipped() || IsShieldEquipped()) { return; }
+	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost) { return; }
 
 	if (bCanCombo)
 	{
@@ -431,6 +433,7 @@ void APlayerCharacter::Attack(const FInputActionValue& value)
 	if (IsOccupied()) { return; }
 
 	PlayMontage(AttackMontageOneHanded, FName("Attack1"));
+	UseStamina(LightAttackStaminaCost);
 	ActionState = EActionState::EAS_Attacking;
 }
 
@@ -440,17 +443,19 @@ void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 
 	ActionState = EActionState::EAS_Dodging;
 
-	if (IsMoving())
+	if (IsMoving() && GetStamina() >= RollStaminaCost)
 	{
 		FVector RollDirection = GetVelocity().GetSafeNormal();
 		FRotator NewRotation = RollDirection.Rotation();
 		SetActorRotation(NewRotation);
 		PlayMontage(RollMontage, FName("Roll1"));
+		UseStamina(RollStaminaCost);
 		CreateFields(GetActorLocation());
 	}
-	else if (IsNotMoving())
+	else if (IsNotMoving() && GetStamina() >= BackstepStaminaCost)
 	{
 		PlayMontage(BackStepMontage, FName("Default"));
+		UseStamina(BackstepStaminaCost);
 	}
 }
 
@@ -491,7 +496,7 @@ void APlayerCharacter::SwitchLockOnTarget(const FInputActionValue& value)
 		{
 			CurrentEnemyTargetHitInterface->BeLockedOnTo();
 		}
-		
+
 		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
 		IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
 	}
@@ -511,7 +516,7 @@ void APlayerCharacter::SwitchLockOnTarget(const FInputActionValue& value)
 		{
 			CurrentEnemyTargetHitInterface->BeLockedOnTo();
 		}
-		
+
 		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
 		IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
 	}
@@ -530,7 +535,7 @@ void APlayerCharacter::StopBlock(const FInputActionValue& value)
 {
 	if (ActionState == EActionState::EAS_Blocking && EquippedShield)
 
-	PlayMontage(BlockMontage, FName("StopBlock"));
+		PlayMontage(BlockMontage, FName("StopBlock"));
 	ActionState = EActionState::EAS_Unoccupied;
 	Tags.Remove("Blocking");
 }
@@ -737,7 +742,7 @@ void APlayerCharacter::DetermineFirstLockOnTarget()
 		}
 
 		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
-		
+
 		if (IsDeadEnemy)
 		{
 			IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
@@ -904,6 +909,45 @@ void APlayerCharacter::ReceiveDamage(const float& DamageAmount)
 	}
 }
 
+void APlayerCharacter::StartStaminaRecharge()
+{
+	if (AttributeComponent)
+	{
+		Tags.AddUnique(FName("RechargeingStamina"));
+		AttributeComponent->StartStaminaRecharge();
+	}
+}
+
+void APlayerCharacter::StopStaminaRecharge()
+{
+	if (AttributeComponent)
+	{
+		AttributeComponent->StopStaminaRecharge();
+	}
+}
+
+float APlayerCharacter::GetStamina()
+{
+	if (AttributeComponent)
+	{
+		return AttributeComponent->GetCurrentStamina();
+	}
+	else
+	{
+		return 0.f;
+	}
+}
+
+void APlayerCharacter::UseStamina(const float& StaminaAmount)
+{
+	if (AttributeComponent && HUDOverlay)
+	{
+		AttributeComponent->UseStamina(StaminaAmount);
+		AttributeComponent->StopStaminaRecharge();
+		HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
+	}
+}
+
 void APlayerCharacter::AddActorTags()
 {
 	Tags.AddUnique(FName("Hitable"));
@@ -924,11 +968,21 @@ void APlayerCharacter::SetupHUD()
 
 			if (HUDOverlay && AttributeComponent)
 			{
+				AttributeComponent->SetInitialHealthAndStaminaValues();
 				HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
 				HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
 				HUDOverlay->HideInteractTextBox();
 			}
 		}
+	}
+}
+
+void APlayerCharacter::UpdateHUD(const float& DeltaTime)
+{
+	if (ActorHasTag(FName("RechargeingStamina")) && HUDOverlay && AttributeComponent)
+	{
+		AttributeComponent->RechargeStamina(DeltaTime);
+		HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
 	}
 }
 
@@ -1060,4 +1114,3 @@ void APlayerCharacter::CheckCanSitAtCheckpoint()
 
 	}
 }
-

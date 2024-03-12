@@ -69,11 +69,13 @@ void AProjectile::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 				if (Theta > 0.f && Theta <= 90.f)
 				{
 					Destroy();
+					PlayerHitInterface->UseStamina(ProjectileDamage / 2);
 					return;
 				}
 				else if (Theta < 0.f && Theta >= -90.f)
 				{
 					Destroy();
+					PlayerHitInterface->UseStamina(ProjectileDamage / 2);
 					return;
 				}
 			}
