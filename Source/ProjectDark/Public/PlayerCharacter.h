@@ -167,7 +167,7 @@ protected:
 	USceneComponent* EndTraceLocation;
 
 	UPROPERTY(EditAnywhere, Category = Camera)
-	float CameraHeightLockedOn = 50.f;
+	float CameraHeightLockedOn = 80.f;
 
 	UPROPERTY(EditAnywhere, Category = Camera)
 	float LockOffDistance = 2000.f;

@@ -29,5 +29,6 @@ enum class EEnemyState : uint8
 	EES_Patrolling UMETA(DisplayName = "Patrolling"),
 	EES_Chasing UMETA(DisplayName = "Chasing"),
 	EES_Attacking UMETA(DisplayName = "Attacking"),
-	EES_Blocking UMETA(DisplayName = "Blocking")
+	EES_Blocking UMETA(DisplayName = "Blocking"),
+	EES_Strafing UMETA(DisplayName = "Strafing")
 };
