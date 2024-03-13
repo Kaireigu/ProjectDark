@@ -192,7 +192,7 @@ void AEnemy::PlayHitReactMontage(const FVector& ImpactPoint)
 
 void AEnemy::PawnSeen(APawn* SeenPawn)
 {
-	if (EnemyState == EEnemyState::EES_Chasing || EnemyState == EEnemyState::EES_Dead) { return; }
+	if (EnemyState != EEnemyState::EES_Patrolling) { return; }
 
 	
 	if (SeenPawn->ActorHasTag("PlayerCharacter"))
@@ -219,7 +219,7 @@ void AEnemy::MontageEnd()
 
 void AEnemy::MoveToTarget(AActor* Target)
 {
-	if (EnemyController == nullptr || Target == nullptr || EnemyState == EEnemyState::EES_Dead || EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking) { return; }
+	if (EnemyController == nullptr || Target == nullptr || EnemyState == EEnemyState::EES_Dead || EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking || EnemyState == EEnemyState::EES_Strafing) { return; }
 
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(Target);
@@ -235,9 +235,21 @@ void AEnemy::MoveToTarget(AActor* Target)
 	EnemyController->MoveTo(MoveRequest);
 }
 
+void AEnemy::MoveToTargetLocation(const FVector& Target)
+{
+	if (EnemyController == nullptr || EnemyState == EEnemyState::EES_Dead || EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking) { return; }
+
+	FAIMoveRequest MoveRequest;
+	MoveRequest.SetGoalLocation(Target);
+
+	MoveRequest.SetAcceptanceRadius(TargetRadius);
+	
+	EnemyController->MoveTo(MoveRequest);
+}
+
 void AEnemy::CheckDistanceToCombatTarget()
 {
-	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking || EnemyState == EEnemyState::EES_Dead) { return; }
+	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking || EnemyState == EEnemyState::EES_Strafing || EnemyState == EEnemyState::EES_Dead) { return; }
 
 	if (CombatTarget)
 	{
@@ -249,9 +261,10 @@ void AEnemy::CheckDistanceToCombatTarget()
 		}
 		else if (InTargetRange(CombatTarget, AttackRadius))
 		{
+			int32 Selection = FMath::RandRange(0, 3);
+
 			if (HasShield)
 			{
-				int32 Selection = FMath::RandRange(0, 2);
 
 				switch (Selection)
 				{
@@ -260,10 +273,38 @@ void AEnemy::CheckDistanceToCombatTarget()
 					break;
 
 				case 1:
-					Block();
+					Attack();
 					break;
 
 				case 2:
+					Block();
+					break;
+
+				case 3:
+					Strafe();
+					break;
+
+				default:
+					break;
+				}
+			}
+			else if (HasRangedWeapon == false)
+			{
+				switch (Selection)
+				{
+				case 0:
+					Attack();
+					break;
+
+				case 1:
+					Attack();
+					break;
+
+				case 2:
+					Attack();
+					break;
+
+				case 3:
 					Strafe();
 					break;
 
@@ -292,7 +333,6 @@ void AEnemy::Attack()
 {
 	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead) { return; }
 	
-	SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation()));
 
 	if (AttackMontage && EnemyEquipState == ECharacterState::ECS_Unequipped)
 	{
@@ -325,8 +365,6 @@ void AEnemy::Block()
 {
 	if (EnemyState == EEnemyState::EES_Blocking) { return; }
 
-	SetActorRotation(UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), CombatTarget->GetActorLocation()));
-
 	if (BlockMontage)
 	{
 		PlayMontage(BlockMontage, FName("Default"));
@@ -337,7 +375,46 @@ void AEnemy::Block()
 
 void AEnemy::Strafe()
 {
-	// Implement Strafe needs doing.
+	if (CombatTarget && InTargetRange(CombatTarget->GetActorLocation(), CannotStrafeRadius)) { return; }
+
+	int32 Selection = FMath::RandRange(0, 1);
+	EnemyState = EEnemyState::EES_Strafing;
+
+
+	if (HasShield)
+	{
+		switch (Selection)
+		{
+
+		case 0:
+			PlayMontage(StrafeMontage, FName("ShieldStrafeLeft"));
+			break;
+
+		case 1:
+			PlayMontage(StrafeMontage, FName("ShieldStrafeRight"));
+			Tags.AddUnique(FName("Blocking"));
+			break;
+
+		default:
+			break;
+		}
+	}
+	else
+	{
+		switch (Selection)
+		{
+		case 0:
+			PlayMontage(StrafeMontage, FName("WalkStrafeLeft"));
+			break;
+
+		case 1:
+			PlayMontage(StrafeMontage, FName("WalkStrafeRight"));
+			break;
+
+		default:
+			break;
+		}
+	}
 }
 
 void AEnemy::FireArrow()
@@ -360,6 +437,13 @@ void AEnemy::FireArrow()
 bool AEnemy::InTargetRange(AActor* Target, const double& Radius)
 {
 	const double DistanceToTarget = (Target->GetActorLocation() - GetActorLocation()).Size();
+
+	return DistanceToTarget <= Radius;
+}
+
+bool AEnemy::InTargetRange(const FVector& Target, const double& Radius)
+{
+	const double DistanceToTarget = (Target - GetActorLocation()).Size();
 
 	return DistanceToTarget <= Radius;
 }

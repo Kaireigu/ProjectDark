@@ -60,6 +60,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Movement)
 	float ChaseSpeed = 200.f;
 
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float DistanceToStrafe = 200.f;
+
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	TSubclassOf<AWeapon> WeaponClass;
 
@@ -111,6 +114,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* ThrustAttackMontage;
 
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* StrafeMontage;
+
 	UPROPERTY(EditInstanceOnly, Category = "AI Navigation")
 	AActor* PatrolTarget;
 
@@ -122,6 +128,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "AI Navigation")
 	double AttackRadius = 150.f;
+
+	UPROPERTY(EditAnywhere, Category = "AI Navigation")
+	double CannotStrafeRadius = 100.f;
 
 	UPROPERTY(EditAnywhere, Category = "AI Navigation")
 	double AcceptanceRadius = 200.f;
@@ -141,18 +150,21 @@ protected:
 private:
 
 	void MoveToTarget(AActor* Target);
+	void MoveToTargetLocation(const FVector& Target);
 	void CheckDistanceToCombatTarget();
 	void Attack();
 	void Block();
 	void Strafe();
 
 	bool InTargetRange(AActor* Target, const double& Radius);
+	bool InTargetRange(const FVector& Target, const double& Radius);
 	void AddInitialTags();
 	void InitialiseComponents();
 	FVector GetTranslationWarpTarget();
 
 	UPROPERTY(VisibleInstanceOnly)
 	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
+
 
 public:	
 	FORCEINLINE const EEnemyState& GetEnemyState() { return EnemyState; }
