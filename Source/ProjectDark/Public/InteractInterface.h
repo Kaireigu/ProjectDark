@@ -23,5 +23,9 @@ class PROJECTDARK_API IInteractInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 
-	virtual void InteractWithCheckpoint() = 0;
+	virtual void InteractWithCheckpoint();
+	virtual void SetCanGetOnLadder(const bool& CanGetOn, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder);
+	virtual void SetCanGetOffLadder(const bool& CanGetOff, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder);
+	virtual void SetLadderInUse();
+	virtual void SetLadderNotInUse();
 };

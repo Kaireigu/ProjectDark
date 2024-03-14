@@ -39,6 +39,9 @@ public:
 	void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) override;
 
 	void InteractWithCheckpoint() override;
+	void SetCanGetOnLadder(const bool& CanGetOn, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder) override;
+	void SetCanGetOffLadder(const bool& CanGetOff, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder) override;
+
 	void SetHUDInteractText(const FString& InteractText);
 	void ClearHUDInteractText();
 
@@ -70,6 +73,12 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void AttachPotionToHip();
+
+	UFUNCTION(BlueprintCallable)
+	void TurnClimbingOff();
+
+	UFUNCTION(BlueprintCallable)
+	void StopMovement();
 
 	void UseStamina(const float& StaminaAmount) override;
 
@@ -157,6 +166,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* SitMontage;
 
+	UPROPERTY(EditDefaultsOnly, Category = Montages)
+	UAnimMontage* ClimbMontage;
+
 	UPROPERTY(EditAnywhere, Category = Components)
 	UBoxComponent* LockOnBox;
 
@@ -232,6 +244,14 @@ private:
 	bool bComboActive = false;
 	bool bIsLockingOn = false;
 	bool bIsFirstTimeLockingOn = true;
+	bool bCanGetOnLadder = false;
+	bool bCanGetOffLadder = false;
+	bool bShouldDoIKTrace = true;
+
+	FVector LadderPosition;
+	FVector LadderStartPosition;
+	FRotator LadderFacingRotation;
+	IInteractInterface* LadderInUse = nullptr;
 
 	void ReceiveHealth(const float& HealAmount);
 	void ReceiveDamage(const float& DamageAmount);
@@ -247,6 +267,7 @@ private:
 	void PickUpShield();
 	void PickUpPotion();
 	void CheckCanSitAtCheckpoint();
+	void TurnClimbingOn();
 
 	UPROPERTY(VisibleInstanceOnly)
 	TArray<AActor*> LockableEnemies;
@@ -283,4 +304,5 @@ public:
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
 	FORCEINLINE ECharacterState GetCharacterState() { return CharacterState; }
 	FORCEINLINE EActionState GetActionState() { return ActionState; }
+	FORCEINLINE bool GetShouldDoIKTrace() { return bShouldDoIKTrace; }
 };

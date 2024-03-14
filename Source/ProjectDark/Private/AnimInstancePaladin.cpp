@@ -28,5 +28,6 @@ void UAnimInstancePaladin::NativeUpdateAnimation(float DeltaTime)
 	{
 		CharacterState = PlayerCharacter->GetCharacterState();
 		ActionState = PlayerCharacter->GetActionState();
+		bShouldDoIKTrace = PlayerCharacter->GetShouldDoIKTrace();
 	}
 }
