@@ -85,6 +85,25 @@ void APlayerCharacter::InteractWithCheckpoint()
 	}
 }
 
+void APlayerCharacter::SetCanGetOnLadder(const bool& CanGetOn, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder)
+{
+	bCanGetOnLadder = CanGetOn;
+	LadderPosition = LadderLocation;
+	LadderStartPosition = StartPosition;
+	LadderFacingRotation = StartRotation;
+	LadderInUse = Ladder;
+}
+
+void APlayerCharacter::SetCanGetOffLadder(const bool& CanGetOff, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder)
+{
+	bCanGetOffLadder = CanGetOff;
+	LadderPosition = LadderLocation;
+	LadderStartPosition = StartPosition;
+	LadderFacingRotation = StartRotation;
+	LadderInUse = Ladder;
+	GEngine->AddOnScreenDebugMessage(1, 2.f, FColor::Red, FString("CanGetOffCalled"));
+}
+
 void APlayerCharacter::SetHUDInteractText(const FString& InteractText)
 {
 	if (HUDOverlay)
@@ -243,6 +262,27 @@ void APlayerCharacter::AttachPotionToHip()
 	}
 }
 
+void APlayerCharacter::TurnClimbingOff()
+{
+	SetUnoccupied();
+	bShouldDoIKTrace = true;
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	GetCharacterMovement()->SetPlaneConstraintEnabled(false);
+
+	SetWeaponSocketOnEquipping();
+	SetShieldSocketOnEquipping();
+
+	if (LadderInUse)
+	{
+		LadderInUse->SetLadderNotInUse();
+	}
+}
+
+void APlayerCharacter::StopMovement()
+{
+	GetCharacterMovement()->Velocity = FVector::ZeroVector;
+}
+
 void APlayerCharacter::SetDefaultControllerValues()
 {
 	bUseControllerRotationPitch = false;
@@ -367,6 +407,34 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 
 void APlayerCharacter::Move(const FInputActionValue& value)
 {
+	if (ActionState == EActionState::EAS_Climbing && GetMesh()->GetAnimInstance()->IsAnyMontagePlaying() == false)
+	{
+		const FVector2D Movement = value.Get<FVector2D>();
+
+		if (Controller)
+		{
+			
+			if (Movement.X > 0.f)
+			{
+				PlayMontage(ClimbMontage, FName("Climb"));
+			}
+			else if (Movement.X < 0.f)
+			{
+				PlayMontage(ClimbMontage, FName("ClimbDown"));
+
+				if (bCanGetOnLadder)
+				{
+					TurnClimbingOff();
+				}
+			}
+		}
+
+		if (bCanGetOffLadder && Movement.X > 0.f)
+		{
+			PlayMontage(ClimbMontage, FName("EndClimb"));
+		}
+	}
+
 	if (IsOccupied()) { return; }
 
 	const FVector2D Movement = value.Get<FVector2D>();
@@ -418,6 +486,11 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 	PickUpPotion();
 
 	CheckCanSitAtCheckpoint();
+
+	if (bCanGetOnLadder || bCanGetOffLadder)
+	{
+		TurnClimbingOn();
+	}
 
 }
 
@@ -1112,5 +1185,27 @@ void APlayerCharacter::CheckCanSitAtCheckpoint()
 		SetWeaponSocketOnEquipping();
 		SetShieldSocketOnEquipping();
 
+	}
+}
+
+void APlayerCharacter::TurnClimbingOn()
+{
+	SetActorLocation(LadderStartPosition);
+	SetActorRotation(LadderFacingRotation);
+	Controller->SetControlRotation(LadderFacingRotation);
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+	GetCharacterMovement()->SetPlaneConstraintEnabled(true);
+	GetCharacterMovement()->SetPlaneConstraintAxisSetting(EPlaneConstraintAxisSetting::X);
+	GetCharacterMovement()->SetPlaneConstraintAxisSetting(EPlaneConstraintAxisSetting::Y);
+	PlayMontage(ClimbMontage, FName("Climb"));
+	ActionState = EActionState::EAS_Climbing;
+	bShouldDoIKTrace = false;
+	
+	SetWeaponSocketOnEquipping();
+	SetShieldSocketOnEquipping();
+
+	if (LadderInUse)
+	{
+		LadderInUse->SetLadderInUse();
 	}
 }

@@ -28,6 +28,9 @@ protected:
 	bool IsFalling;
 
 	UPROPERTY(BlueprintReadOnly)
+	bool bShouldDoIKTrace = true;
+
+	UPROPERTY(BlueprintReadOnly)
 	APlayerCharacter* PlayerCharacter;
 
 	UPROPERTY(BlueprintReadOnly)
