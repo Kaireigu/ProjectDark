@@ -38,8 +38,11 @@ protected:
 	UPROPERTY(EditAnywhere)
 	USceneComponent* EndBoxTraceLocation;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = Properties)
 	float WeaponDamage = 20.f;
+
+	UPROPERTY(EditAnywhere, Category = Properties)
+	FVector HalfSize = FVector(5.f, 5.f, 5.f);
 
 private:
 

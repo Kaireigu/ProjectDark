@@ -30,6 +30,9 @@ public:
 
 	void UpdatePatrolTarget();
 
+	UFUNCTION()
+	void PawnSeen(APawn* SeenPawn);
+
 	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
 	void BeLockedOnTo() override;
 	void BeLockedOff() override;
@@ -41,12 +44,20 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Die() override;
 	virtual void PlayHitReactMontage(const FVector& ImpactPoint) override;
+	FVector GetTranslationWarpTarget();
+	void CheckDistanceToCombatTarget();
+	virtual void MoveToTarget(AActor* Target);
+	void MoveToTargetLocation(const FVector& Target);
+	virtual void Attack();
+	void Block();
+	void Strafe();
 
-	UFUNCTION()
-	void PawnSeen(APawn* SeenPawn);
+	bool InTargetRange(AActor* Target, const double& Radius);
+	bool InTargetRange(const FVector& Target, const double& Radius);
+	void AddInitialTags();
 
 	UFUNCTION(BlueprintCallable)
-	void MontageEnd();
+	virtual void MontageEnd();
 
 	UFUNCTION(BlueprintCallable)
 	void FireArrow();
@@ -147,23 +158,12 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UHealthBarComponent* HealthBarComponent;
 
-private:
-
-	void MoveToTarget(AActor* Target);
-	void MoveToTargetLocation(const FVector& Target);
-	void CheckDistanceToCombatTarget();
-	void Attack();
-	void Block();
-	void Strafe();
-
-	bool InTargetRange(AActor* Target, const double& Radius);
-	bool InTargetRange(const FVector& Target, const double& Radius);
-	void AddInitialTags();
-	void InitialiseComponents();
-	FVector GetTranslationWarpTarget();
-
 	UPROPERTY(VisibleInstanceOnly)
 	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
+
+private:
+
+	void InitialiseComponents();
 
 
 public:	

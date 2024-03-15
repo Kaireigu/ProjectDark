@@ -28,6 +28,7 @@ public:
 
 	bool IsBehind(const AActor* OtherActor);
 	bool IsFacing(const AActor* OtherActor);
+	bool IsNotInFront(const AActor* OtherActor);
 
 protected:
 
