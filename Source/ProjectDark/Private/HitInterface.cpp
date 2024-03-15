@@ -19,3 +19,8 @@ void IHitInterface::UseStamina(const float& StaminaAmount)
 {
 
 }
+
+void IHitInterface::RechargeStamina()
+{
+
+}

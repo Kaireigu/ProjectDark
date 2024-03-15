@@ -28,4 +28,7 @@ public:
 	virtual void SetCanGetOffLadder(const bool& CanGetOff, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder);
 	virtual void SetLadderInUse();
 	virtual void SetLadderNotInUse();
+	virtual void SetupBossBar(const FString& BossName, const float& BossMaxHealth);
+	virtual void HideBossBar();
+	virtual void UpdateBossBar(const float& BossCurrentHealth);
 };

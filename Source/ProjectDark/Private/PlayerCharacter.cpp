@@ -127,6 +127,38 @@ float APlayerCharacter::TakeDamage(float DamageAmount, const FDamageEvent& Damag
 	return DamageAmount;
 }
 
+void APlayerCharacter::PlayHitReactMontage(const FVector& ImpactPoint)
+{
+	Super::PlayHitReactMontage(ImpactPoint);
+
+	ActionState = EActionState::EAS_HitReacting;
+}
+
+void APlayerCharacter::SetupBossBar(const FString& BossName, const float& BossMaxHealth)
+{
+	if (HUDOverlay)
+	{
+		HUDOverlay->SetBossTextBox(BossName);
+		CurrentBossMaxHealth = BossMaxHealth;
+	}
+}
+
+void APlayerCharacter::HideBossBar()
+{
+	if (HUDOverlay)
+	{
+		HUDOverlay->HideBossBar();
+	}
+}
+
+void APlayerCharacter::UpdateBossBar(const float& BossCurrentHealth)
+{
+	if (HUDOverlay)
+	{
+		HUDOverlay->SetBossHealthPercent(BossCurrentHealth, CurrentBossMaxHealth);
+	}
+}
+
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -496,7 +528,7 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 
 void APlayerCharacter::Attack(const FInputActionValue& value)
 {
-	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost) { return; }
+	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost || ActionState == EActionState::EAS_HitReacting) { return; }
 
 	if (bCanCombo)
 	{
@@ -607,10 +639,13 @@ void APlayerCharacter::Block(const FInputActionValue& value)
 void APlayerCharacter::StopBlock(const FInputActionValue& value)
 {
 	if (ActionState == EActionState::EAS_Blocking && EquippedShield)
-
+	{
 		PlayMontage(BlockMontage, FName("StopBlock"));
-	ActionState = EActionState::EAS_Unoccupied;
-	Tags.Remove("Blocking");
+		ActionState = EActionState::EAS_Unoccupied;
+		Tags.Remove("Blocking");
+		RechargeStamina();
+	}
+
 }
 
 void APlayerCharacter::UseItem(const FInputActionValue& value)
@@ -1021,6 +1056,11 @@ void APlayerCharacter::UseStamina(const float& StaminaAmount)
 	}
 }
 
+void APlayerCharacter::RechargeStamina()
+{
+	StartStaminaRecharge();
+}
+
 void APlayerCharacter::AddActorTags()
 {
 	Tags.AddUnique(FName("Hitable"));
@@ -1045,6 +1085,7 @@ void APlayerCharacter::SetupHUD()
 				HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
 				HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
 				HUDOverlay->HideInteractTextBox();
+				HUDOverlay->HideBossBar();
 			}
 		}
 	}

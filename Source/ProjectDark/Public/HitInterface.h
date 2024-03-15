@@ -28,4 +28,5 @@ public:
 	virtual void BeLockedOnTo();
 	virtual void BeLockedOff();
 	virtual void UseStamina(const float& StaminaAmount);
+	virtual void RechargeStamina();
 };

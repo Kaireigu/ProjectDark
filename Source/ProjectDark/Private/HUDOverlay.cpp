@@ -21,12 +21,29 @@ void UHUDOverlay::SetStaminaBarPercent(const float& Percent, const float& MaxSta
 	}
 }
 
+void UHUDOverlay::SetBossHealthPercent(const float& Percent, const float& BossMaxHealth)
+{
+	if (BossHealthBar)
+	{
+		BossHealthBar->SetPercent(FMath::Clamp(Percent, 0.f, BossMaxHealth));
+	}
+}
+
 void UHUDOverlay::SetInteractTextBox(const FString& ItemText)
 {
 	if (InteractTextBox)
 	{
 		InteractTextBox->SetText(FText::FromString(ItemText));
 		ShowInteractTextBox();
+	}
+}
+
+void UHUDOverlay::SetBossTextBox(const FString& BossName)
+{
+	if (BossTextBox)
+	{
+		BossTextBox->SetText(FText::FromString(BossName));
+		ShowBossBar();
 	}
 }
 
@@ -53,5 +70,23 @@ void UHUDOverlay::ShowInteractTextBox()
 	if (InteractTextBox)
 	{
 		InteractTextBox->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void UHUDOverlay::HideBossBar()
+{
+	if (BossTextBox && BossHealthBar)
+	{
+		BossTextBox->SetVisibility(ESlateVisibility::Hidden);
+		BossHealthBar->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void UHUDOverlay::ShowBossBar()
+{
+	if (BossTextBox)
+	{
+		BossTextBox->SetVisibility(ESlateVisibility::Visible);
+		BossHealthBar->SetVisibility(ESlateVisibility::Visible);
 	}
 }
