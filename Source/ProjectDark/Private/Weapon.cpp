@@ -49,7 +49,6 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
 	const FVector Start = StartBoxTraceLocation->GetComponentLocation();
 	const FVector End = EndBoxTraceLocation->GetComponentLocation();
-	const FVector HalfSize = FVector(5.f, 5.f, 5.f);
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.AddUnique(this);
 	ActorsToIgnore.AddUnique(GetOwner());
@@ -68,6 +67,7 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 		if (HitResult.GetActor()->ActorHasTag(FName("Enemy")) && GetOwner()->ActorHasTag(FName("Enemy"))) { return; }
 
 		IHitInterface* HittableActor = Cast<IHitInterface>(HitResult.GetActor());
+
 
 		if (HitResult.GetActor()->ActorHasTag(FName("Hitable")))
 		{
@@ -89,6 +89,7 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
 			if (HittableActor)
 			{
+				GEngine->AddOnScreenDebugMessage(1, 2.f, FColor::Red, FString("Hit Player"));
 				HittableActor->GetHit(GetOwner(), GetOwner()->GetActorLocation());
 			}
 
