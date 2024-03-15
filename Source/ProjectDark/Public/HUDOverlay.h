@@ -21,10 +21,14 @@ public:
 
 	void SetHealthBarPercent(const float& Percent, const float& MaxHealth);
 	void SetStaminaBarPercent(const float& Percent, const float& MaxStamina);
+	void SetBossHealthPercent(const float& Percent, const float& BossMaxHealth);
 	void SetInteractTextBox(const FString& ItemText);
+	void SetBossTextBox(const FString& BossName);
 	void ClearInteractTextBox();
 	void HideInteractTextBox();
 	void ShowInteractTextBox();
+	void HideBossBar();
+	void ShowBossBar();
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthProgressBar;
@@ -34,5 +38,11 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UEditableTextBox* InteractTextBox;
+
+	UPROPERTY(meta = (BindWidget))
+	UProgressBar* BossHealthBar;
+
+	UPROPERTY(meta = (BindWidget))
+	UEditableTextBox* BossTextBox;
 
 };

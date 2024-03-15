@@ -27,3 +27,18 @@ void IInteractInterface::SetLadderNotInUse()
 {
 
 }
+
+void IInteractInterface::SetupBossBar(const FString& BossName, const float& BossMaxHealth)
+{
+
+}
+
+void IInteractInterface::HideBossBar()
+{
+
+}
+
+void IInteractInterface::UpdateBossBar(const float& BossCurrentHealth)
+{
+
+}

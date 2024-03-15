@@ -9,7 +9,14 @@
 #include "AITypes.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "InteractInterface.h"
+#include "Attributes.h"
 
+
+ABoss::ABoss()
+{
+	Tags.AddUnique(FName("Boss"));
+}
 
 void ABoss::Tick(float DeltaTime)
 {
@@ -20,6 +27,18 @@ void ABoss::Tick(float DeltaTime)
 		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocation(FName("CombatTarget"), GetTranslationWarpTarget());
 	}
 
+}
+
+float ABoss::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (PlayerInteractInterface && AttributeComponent)
+	{
+		PlayerInteractInterface->UpdateBossBar(AttributeComponent->GetHealthPercent());
+	}
+
+	return 0.0f;
 }
 
 void ABoss::BeginPlay()
@@ -40,6 +59,26 @@ void ABoss::MoveToTarget(AActor* Target)
 
 	EnemyController->MoveTo(MoveRequest);
 
+	if (PlayerInteractInterface == nullptr)
+	{
+		PlayerInteractInterface = Cast<IInteractInterface>(Target);
+
+		if (PlayerInteractInterface && AttributeComponent)
+		{
+			PlayerInteractInterface->SetupBossBar(FString("Asylum Demon Leygo"), AttributeComponent->GetMaxHealth());
+		}
+	}
+
+}
+
+void ABoss::Die()
+{
+	Super::Die();
+
+	if (PlayerInteractInterface)
+	{
+		PlayerInteractInterface->HideBossBar();
+	}
 }
 
 void ABoss::MontageEnd()
@@ -67,7 +106,6 @@ void ABoss::EngageCombatTarget()
 			EnemyState = EEnemyState::EES_Chasing;
 			MoveToTarget(CombatTarget);
 		}
-
 	}
 }
 

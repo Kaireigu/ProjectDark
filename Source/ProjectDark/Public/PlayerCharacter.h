@@ -46,6 +46,11 @@ public:
 	void ClearHUDInteractText();
 
 	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+	void PlayHitReactMontage(const FVector& ImpactPoint) override;
+
+	void SetupBossBar(const FString& BossName, const float& BossMaxHealth) override;
+	void HideBossBar() override;
+	virtual void UpdateBossBar(const float& BossCurrentHealth) override;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void CreateFields(const FVector& FieldLocation);
@@ -81,6 +86,7 @@ protected:
 	void StopMovement();
 
 	void UseStamina(const float& StaminaAmount) override;
+	void RechargeStamina() override;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
@@ -299,6 +305,8 @@ private:
 
 	UPROPERTY()
 	UHUDOverlay* HUDOverlay;
+
+	float CurrentBossMaxHealth;
 
 public:
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }
