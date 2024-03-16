@@ -51,6 +51,8 @@ public:
 	void SetupBossBar(const FString& BossName, const float& BossMaxHealth) override;
 	void HideBossBar() override;
 	virtual void UpdateBossBar(const float& BossCurrentHealth) override;
+	void SetDialogueText(const FString& TextToDisplay) override;
+	void ClearDialogueText() override;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void CreateFields(const FVector& FieldLocation);

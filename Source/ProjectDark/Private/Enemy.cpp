@@ -12,6 +12,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Weapon.h"
 #include "Shield.h"
+#include "Item.h"
 #include "Projectile.h"
 #include "HealthBarComponent.h"
 #include "HealthBar.h"
@@ -165,8 +166,6 @@ void AEnemy::BeginPlay()
 	}
 
 	EnemyController = Cast<AAIController>(GetController());
-
-	MoveToTarget(PatrolTarget);
 	
 }
 

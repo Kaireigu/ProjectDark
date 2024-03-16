@@ -47,6 +47,15 @@ void UHUDOverlay::SetBossTextBox(const FString& BossName)
 	}
 }
 
+void UHUDOverlay::SetDialogueTextBox(const FString& DialogueText)
+{
+	if (DialogueTextBox)
+	{
+		DialogueTextBox->SetText(FText::FromString(DialogueText));
+		ShowDialogueTextBox();
+	}
+}
+
 void UHUDOverlay::ClearInteractTextBox()
 {
 	HideInteractTextBox();
@@ -88,5 +97,21 @@ void UHUDOverlay::ShowBossBar()
 	{
 		BossTextBox->SetVisibility(ESlateVisibility::Visible);
 		BossHealthBar->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void UHUDOverlay::HideDialogueTextBox()
+{
+	if (DialogueTextBox)
+	{
+		DialogueTextBox->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void UHUDOverlay::ShowDialogueTextBox()
+{
+	if (DialogueTextBox)
+	{
+		DialogueTextBox->SetVisibility(ESlateVisibility::Visible);
 	}
 }

@@ -24,6 +24,9 @@ private:
 	int32 Uses = 1;
 
 	UPROPERTY(EditAnywhere, Category = "Potion Properties")
+	int32 MaxUses = 5;
+
+	UPROPERTY(EditAnywhere, Category = "Potion Properties")
 	float HealAmount = 20.f;
 
 public:
@@ -31,5 +34,6 @@ public:
 	FORCEINLINE const float& GetHealAmount() { return HealAmount; }
 	FORCEINLINE void ReduceUsesByOne() { Uses -= 1; }
 	FORCEINLINE bool CanUsePotion() { return Uses > 0; }
+	FORCEINLINE void ResetNumberOfUses() { Uses = MaxUses; }
 
 };

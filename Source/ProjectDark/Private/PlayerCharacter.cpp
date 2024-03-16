@@ -159,6 +159,22 @@ void APlayerCharacter::UpdateBossBar(const float& BossCurrentHealth)
 	}
 }
 
+void APlayerCharacter::SetDialogueText(const FString& TextToDisplay)
+{
+	if (HUDOverlay)
+	{
+		HUDOverlay->SetDialogueTextBox(TextToDisplay);
+	}
+}
+
+void APlayerCharacter::ClearDialogueText()
+{
+	if (HUDOverlay)
+	{
+		HUDOverlay->HideDialogueTextBox();
+	}
+}
+
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -275,11 +291,6 @@ void APlayerCharacter::DrinkPotion()
 
 			EquippedPotion->ReduceUsesByOne();
 
-			if (EquippedPotion->CanUsePotion() == false)
-			{
-				EquippedPotion->Destroy();
-				EquippedPotion = nullptr;
-			}
 		}
 	}
 }
@@ -650,7 +661,7 @@ void APlayerCharacter::StopBlock(const FInputActionValue& value)
 
 void APlayerCharacter::UseItem(const FInputActionValue& value)
 {
-	if (EquippedPotion)
+	if (EquippedPotion && EquippedPotion->CanUsePotion())
 	{
 		EquippedPotion->AttachMeshToSocket(GetMesh(), FName("LeftHandSocket"));
 		PlayMontage(PotionMontage, FName("Default"));
@@ -1085,6 +1096,7 @@ void APlayerCharacter::SetupHUD()
 				HUDOverlay->SetHealthBarPercent(AttributeComponent->GetHealthPercent(), AttributeComponent->GetMaxHealth());
 				HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
 				HUDOverlay->HideInteractTextBox();
+				HUDOverlay->HideDialogueTextBox();
 				HUDOverlay->HideBossBar();
 			}
 		}
@@ -1204,6 +1216,11 @@ void APlayerCharacter::CheckCanSitAtCheckpoint()
 		if (AttributeComponent)
 		{
 			ReceiveHealth(AttributeComponent->GetMaxHealth());
+
+			if (EquippedPotion)
+			{
+				EquippedPotion->ResetNumberOfUses();
+			}
 		}
 
 		if (IsEquippedSwordAndShield())

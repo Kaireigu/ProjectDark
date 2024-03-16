@@ -42,3 +42,13 @@ void IInteractInterface::UpdateBossBar(const float& BossCurrentHealth)
 {
 
 }
+
+void IInteractInterface::SetDialogueText(const FString& TextToDisplay)
+{
+
+}
+
+void IInteractInterface::ClearDialogueText()
+{
+
+}
