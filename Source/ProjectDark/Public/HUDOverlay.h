@@ -24,11 +24,14 @@ public:
 	void SetBossHealthPercent(const float& Percent, const float& BossMaxHealth);
 	void SetInteractTextBox(const FString& ItemText);
 	void SetBossTextBox(const FString& BossName);
+	void SetDialogueTextBox(const FString& DialogueText);
 	void ClearInteractTextBox();
 	void HideInteractTextBox();
 	void ShowInteractTextBox();
 	void HideBossBar();
 	void ShowBossBar();
+	void HideDialogueTextBox();
+	void ShowDialogueTextBox();
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthProgressBar;
@@ -44,5 +47,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UEditableTextBox* BossTextBox;
+
+	UPROPERTY(meta = (BindWidget))
+	UEditableTextBox* DialogueTextBox;
 
 };

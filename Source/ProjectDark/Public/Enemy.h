@@ -15,6 +15,7 @@ class AAIController;
 class UPawnSensingComponent;
 class AWeapon;
 class AShield;
+class AItem;
 class AProjectile;
 class UHealthBarComponent;
 class UMotionWarpingComponent;
@@ -97,6 +98,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	AProjectile* Arrow;
+
+	UPROPERTY(EditAnywhere, Category = "Loot Item")
+	TSubclassOf<AItem> LootItem;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	ECharacterState EnemyEquipState = ECharacterState::ECS_Unequipped;
