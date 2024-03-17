@@ -195,6 +195,8 @@ void APlayerCharacter::AttackEnd()
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
+	bCanUseDodgeBackAttack = false;
+
 	if (bComboActive)
 	{
 		bComboActive = false;
@@ -210,6 +212,7 @@ void APlayerCharacter::AttackEnd()
 void APlayerCharacter::SetUnoccupied()
 {
 	ActionState = EActionState::EAS_Unoccupied;
+	bCanUseDodgeBackAttack = false;
 	StartStaminaRecharge();
 
 	if (EquippedWeapon)
@@ -445,6 +448,30 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 			EnhancedInputComponent->BindAction(SelectLeftHandAction, ETriggerEvent::Triggered, this, &APlayerCharacter::SwitchLeftHand);
 		}
 
+		if (HeavyAttackAction)
+		{
+			EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::HeavyAttack);
+		}
+
+		if (SprintAction)
+		{
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Sprint);
+		}
+
+		if (StopSprintAction)
+		{
+			EnhancedInputComponent->BindAction(StopSprintAction, ETriggerEvent::Triggered, this, &APlayerCharacter::StopSprint);
+		}
+
+		if (TapR1Action)
+		{
+			EnhancedInputComponent->BindAction(TapR1Action, ETriggerEvent::Triggered, this, &APlayerCharacter::TapR1);
+		}
+
+		if (TapR2Action)
+		{
+			EnhancedInputComponent->BindAction(TapR2Action, ETriggerEvent::Triggered, this, &APlayerCharacter::TapR2);
+		}
 	}
 }
 
@@ -481,6 +508,12 @@ void APlayerCharacter::Move(const FInputActionValue& value)
 	if (IsOccupied()) { return; }
 
 	const FVector2D Movement = value.Get<FVector2D>();
+
+	if (IsNotMoving() && Movement.X > 0.f && Movement.Y < 0.15f && Movement.Y > -0.15f)
+	{
+		bCanBackStabOrKickOrJumpAttack = true;
+		GetWorldTimerManager().SetTimer(CannotBackstabTimerHandle, this, &APlayerCharacter::SetCannotBackstabOrKickOrJumpAttack, TimeBufferToBackStab, false);
+	}
 
 	if (Controller)
 	{
@@ -541,23 +574,47 @@ void APlayerCharacter::Attack(const FInputActionValue& value)
 {
 	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost || ActionState == EActionState::EAS_HitReacting) { return; }
 
+	if (bCanUseDodgeBackAttack)
+	{
+		bCanUseDodgeBackAttack = false;
+		PlayMontage(AttackMontageOneHanded, FName("DodgeBackAttack"));
+		GEngine->AddOnScreenDebugMessage(1, 2.f, FColor::Red, FString("Montage was Played my Friend"));
+		UseStamina(LightAttackStaminaCost);
+		ActionState = EActionState::EAS_Attacking;
+		return;
+	}
+
 	if (bCanCombo)
 	{
 		bComboActive = true;
 	}
 
-	if (IsOccupied()) { return; }
+	if (IsOccupied() || bCanBackStabOrKickOrJumpAttack) { return; }
 
 	PlayMontage(AttackMontageOneHanded, FName("Attack1"));
 	UseStamina(LightAttackStaminaCost);
 	ActionState = EActionState::EAS_Attacking;
 }
 
+void APlayerCharacter::HeavyAttack(const FInputActionValue& value)
+{
+	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < HeavyAttackStaminaCost || ActionState == EActionState::EAS_HitReacting) { return; }
+
+	if (bCanCombo)
+	{
+		bComboActive = true;
+	}
+
+	if (IsOccupied() || bCanBackStabOrKickOrJumpAttack) { return; }
+
+	PlayMontage(AttackMontageOneHanded, FName("HeavyAttack"));
+	UseStamina(HeavyAttackStaminaCost);
+	ActionState = EActionState::EAS_Attacking;
+}
+
 void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 {
 	if (IsOccupied()) { return; }
-
-	ActionState = EActionState::EAS_Dodging;
 
 	if (IsMoving() && GetStamina() >= RollStaminaCost)
 	{
@@ -567,11 +624,14 @@ void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 		PlayMontage(RollMontage, FName("Roll1"));
 		UseStamina(RollStaminaCost);
 		CreateFields(GetActorLocation());
+		ActionState = EActionState::EAS_Dodging;
 	}
 	else if (IsNotMoving() && GetStamina() >= BackstepStaminaCost)
 	{
 		PlayMontage(BackStepMontage, FName("Default"));
 		UseStamina(BackstepStaminaCost);
+		bCanUseDodgeBackAttack = true;
+		ActionState = EActionState::EAS_Dodging;
 	}
 }
 
@@ -677,6 +737,45 @@ void APlayerCharacter::SwitchRightHand(const FInputActionValue& value)
 void APlayerCharacter::SwitchLeftHand(const FInputActionValue& value)
 {
 	SetShieldSocketOnEquipping();
+}
+
+void APlayerCharacter::Sprint(const FInputActionValue& value)
+{
+	if (IsMoving())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+		StopStaminaRecharge();
+		StartDrainStamina();
+	}
+}
+
+void APlayerCharacter::StopSprint(const FInputActionValue& value)
+{
+	GetCharacterMovement()->MaxWalkSpeed = Walkspeed;
+	StopDrainStamina();
+	StartStaminaRecharge();
+}
+
+void APlayerCharacter::TapR1(const FInputActionValue& value)
+{
+	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost || ActionState == EActionState::EAS_HitReacting || IsOccupied()) { return; }
+
+	if (bCanBackStabOrKickOrJumpAttack)
+	{
+		PlayMontage(AttackMontageOneHanded, FName("Kick"));
+		ActionState = EActionState::EAS_Attacking;
+	}
+}
+
+void APlayerCharacter::TapR2(const FInputActionValue& value)
+{
+	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost || ActionState == EActionState::EAS_HitReacting || IsOccupied()) { return; }
+
+	if (bCanBackStabOrKickOrJumpAttack)
+	{
+		PlayMontage(AttackMontageOneHanded, FName("JumpAttack"));
+		ActionState = EActionState::EAS_Attacking;
+	}
 }
 
 void APlayerCharacter::OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -1032,7 +1131,6 @@ void APlayerCharacter::StartStaminaRecharge()
 {
 	if (AttributeComponent)
 	{
-		Tags.AddUnique(FName("RechargeingStamina"));
 		AttributeComponent->StartStaminaRecharge();
 	}
 }
@@ -1042,6 +1140,23 @@ void APlayerCharacter::StopStaminaRecharge()
 	if (AttributeComponent)
 	{
 		AttributeComponent->StopStaminaRecharge();
+	}
+}
+
+void APlayerCharacter::StartDrainStamina()
+{
+	if (AttributeComponent)
+	{
+		AttributeComponent->StartDrainStamina();
+	}
+}
+
+void APlayerCharacter::StopDrainStamina()
+{
+	if (AttributeComponent)
+	{
+		AttributeComponent->StopDrainStamina();
+		StartStaminaRecharge();
 	}
 }
 
@@ -1105,9 +1220,15 @@ void APlayerCharacter::SetupHUD()
 
 void APlayerCharacter::UpdateHUD(const float& DeltaTime)
 {
-	if (ActorHasTag(FName("RechargeingStamina")) && HUDOverlay && AttributeComponent)
+	if (HUDOverlay && AttributeComponent)
 	{
 		AttributeComponent->RechargeStamina(DeltaTime);
+		HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
+	}
+	
+	if (HUDOverlay && AttributeComponent)
+	{
+		AttributeComponent->DrainStamina(DeltaTime);
 		HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
 	}
 }
@@ -1266,4 +1387,9 @@ void APlayerCharacter::TurnClimbingOn()
 	{
 		LadderInUse->SetLadderInUse();
 	}
+}
+
+void APlayerCharacter::SetCannotBackstabOrKickOrJumpAttack()
+{
+	bCanBackStabOrKickOrJumpAttack = false;
 }

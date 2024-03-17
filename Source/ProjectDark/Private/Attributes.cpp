@@ -35,17 +35,38 @@ void UAttributes::StopStaminaRecharge()
 	bShouldRechargeStamina = false;
 }
 
+void UAttributes::StartDrainStamina()
+{
+	bShouldDrainStamina = true;
+}
+
+void UAttributes::StopDrainStamina()
+{
+	bShouldDrainStamina = false;
+}
+
 void UAttributes::RechargeStamina(const float& DeltaTime)
 {
 	if (bShouldRechargeStamina)
 	{
-		Stamina += FMath::Clamp(StaminaRechargeRate * DeltaTime, 0, MaxStamina);
-		GetOwner()->Tags.AddUnique(FName("RechargingStamina"));
+		Stamina = FMath::Clamp(Stamina + (StaminaRechargeRate * DeltaTime), 0.f, MaxStamina);
 
 		if (Stamina >= MaxStamina)
 		{
 			bShouldRechargeStamina = false;
-			GetOwner()->Tags.Remove(FName("RechargingStamina"));
+		}
+	}
+}
+
+void UAttributes::DrainStamina(const float& DeltaTime)
+{
+	if (bShouldDrainStamina)
+	{
+		Stamina = FMath::Clamp(Stamina - (StaminaRechargeRate * DeltaTime), 0.f, MaxStamina);
+
+		if (Stamina <= 0.f)
+		{
+			bShouldDrainStamina = false;
 		}
 	}
 }
