@@ -646,6 +646,7 @@ void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 		UseStamina(RollStaminaCost);
 		CreateFields(GetActorLocation());
 		ActionState = EActionState::EAS_Dodging;
+
 	}
 	else if (IsNotMoving() && GetStamina() >= BackstepStaminaCost)
 	{
@@ -952,14 +953,18 @@ void APlayerCharacter::LookAtCurrentTarget(float& DeltaTime)
 		LockOnTargetPosition = CurrentEnemyTarget->GetActorLocation();
 		const FVector EnemyLocation = UKismetMathLibrary::VLerp(LockOnTargetPosition, GetActorLocation(), DeltaTime);
 		const FVector RaisedEnemyLocation = FVector(EnemyLocation.X, EnemyLocation.Y, EnemyLocation.Z + 10.f);
-		const FVector RaisedCameraLocation = Camera->GetComponentLocation() + FVector(0.f, 0.f, CameraHeightLockedOn);
+		const FVector RaisedCameraLocation = GetActorLocation() + FVector(0.f, 0.f, CameraHeightLockedOn);
 		const FRotator CameraLookAtRotation = UKismetMathLibrary::FindLookAtRotation(RaisedCameraLocation, RaisedEnemyLocation);
 		if (ActionState != EActionState::EAS_Dodging)
 		{
 			const FRotator FaceEnemyRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), EnemyLocation);
 			SetActorRotation(FRotator(GetActorRotation().Pitch, UKismetMathLibrary::Lerp(FaceEnemyRotation.Yaw, GetActorRotation().Yaw, DeltaTime), GetActorRotation().Roll));
+			Controller->SetControlRotation(UKismetMathLibrary::RLerp(CameraLookAtRotation, GetControlRotation(), DeltaTime, true));
 		}
-		Controller->SetControlRotation(UKismetMathLibrary::RLerp(CameraLookAtRotation, GetControlRotation(), DeltaTime, true));
+		else
+		{
+			Controller->SetControlRotation(UKismetMathLibrary::FindLookAtRotation(RaisedCameraLocation, RaisedEnemyLocation));
+		}
 	}
 }
 
