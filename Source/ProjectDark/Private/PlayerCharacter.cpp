@@ -101,7 +101,6 @@ void APlayerCharacter::SetCanGetOffLadder(const bool& CanGetOff, const FVector& 
 	LadderStartPosition = StartPosition;
 	LadderFacingRotation = StartRotation;
 	LadderInUse = Ladder;
-	GEngine->AddOnScreenDebugMessage(1, 2.f, FColor::Red, FString("CanGetOffCalled"));
 }
 
 void APlayerCharacter::SetHUDInteractText(const FString& InteractText)
@@ -195,6 +194,14 @@ void APlayerCharacter::AttackEnd()
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
+	bCanUseDodgeBackAttack = false;
+	RemoveBackStabTag();
+
+	if (CameraBoom)
+	{
+		CameraBoom->TargetArmLength = CameraBoomTargetLength;
+	}
+
 	if (bComboActive)
 	{
 		bComboActive = false;
@@ -210,6 +217,8 @@ void APlayerCharacter::AttackEnd()
 void APlayerCharacter::SetUnoccupied()
 {
 	ActionState = EActionState::EAS_Unoccupied;
+	RemoveParryTag();
+	bCanUseDodgeBackAttack = false;
 	StartStaminaRecharge();
 
 	if (EquippedWeapon)
@@ -326,6 +335,16 @@ void APlayerCharacter::StopMovement()
 	GetCharacterMovement()->Velocity = FVector::ZeroVector;
 }
 
+void APlayerCharacter::AddParryTag()
+{
+	Tags.AddUnique(FName("Parrying"));
+}
+
+void APlayerCharacter::RemoveParryTag()
+{
+	Tags.Remove(FName("Parrying"));
+}
+
 void APlayerCharacter::SetDefaultControllerValues()
 {
 	bUseControllerRotationPitch = false;
@@ -343,6 +362,7 @@ void APlayerCharacter::InitialiseComponents()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
 	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->TargetArmLength = CameraBoomTargetLength;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(CameraBoom);
@@ -445,6 +465,35 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 			EnhancedInputComponent->BindAction(SelectLeftHandAction, ETriggerEvent::Triggered, this, &APlayerCharacter::SwitchLeftHand);
 		}
 
+		if (HeavyAttackAction)
+		{
+			EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Triggered, this, &APlayerCharacter::HeavyAttack);
+		}
+
+		if (SprintAction)
+		{
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &APlayerCharacter::Sprint);
+		}
+
+		if (StopSprintAction)
+		{
+			EnhancedInputComponent->BindAction(StopSprintAction, ETriggerEvent::Triggered, this, &APlayerCharacter::StopSprint);
+		}
+
+		if (TapR1Action)
+		{
+			EnhancedInputComponent->BindAction(TapR1Action, ETriggerEvent::Triggered, this, &APlayerCharacter::TapR1);
+		}
+
+		if (TapR2Action)
+		{
+			EnhancedInputComponent->BindAction(TapR2Action, ETriggerEvent::Triggered, this, &APlayerCharacter::TapR2);
+		}
+
+		if (PressedL2Action)
+		{
+			EnhancedInputComponent->BindAction(PressedL2Action, ETriggerEvent::Triggered, this, &APlayerCharacter::PressedL2);
+		}
 	}
 }
 
@@ -481,6 +530,12 @@ void APlayerCharacter::Move(const FInputActionValue& value)
 	if (IsOccupied()) { return; }
 
 	const FVector2D Movement = value.Get<FVector2D>();
+
+	if (IsNotMoving() && Movement.X > 0.f && Movement.Y < 0.15f && Movement.Y > -0.15f)
+	{
+		bCanBackStabOrKickOrJumpAttack = true;
+		GetWorldTimerManager().SetTimer(CannotBackstabTimerHandle, this, &APlayerCharacter::SetCannotBackstabOrKickOrJumpAttack, TimeBufferToBackStab, false);
+	}
 
 	if (Controller)
 	{
@@ -541,23 +596,46 @@ void APlayerCharacter::Attack(const FInputActionValue& value)
 {
 	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost || ActionState == EActionState::EAS_HitReacting) { return; }
 
+	if (bCanUseDodgeBackAttack)
+	{
+		bCanUseDodgeBackAttack = false;
+		PlayMontage(AttackMontageOneHanded, FName("DodgeBackAttack"));
+		UseStamina(LightAttackStaminaCost);
+		ActionState = EActionState::EAS_Attacking;
+		return;
+	}
+
 	if (bCanCombo)
 	{
 		bComboActive = true;
 	}
 
-	if (IsOccupied()) { return; }
+	if (IsOccupied() || bCanBackStabOrKickOrJumpAttack) { return; }
 
 	PlayMontage(AttackMontageOneHanded, FName("Attack1"));
 	UseStamina(LightAttackStaminaCost);
 	ActionState = EActionState::EAS_Attacking;
 }
 
+void APlayerCharacter::HeavyAttack(const FInputActionValue& value)
+{
+	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < HeavyAttackStaminaCost || ActionState == EActionState::EAS_HitReacting) { return; }
+
+	if (bCanCombo)
+	{
+		bComboActive = true;
+	}
+
+	if (IsOccupied() || bCanBackStabOrKickOrJumpAttack) { return; }
+
+	PlayMontage(AttackMontageOneHanded, FName("HeavyAttack"));
+	UseStamina(HeavyAttackStaminaCost);
+	ActionState = EActionState::EAS_Attacking;
+}
+
 void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 {
 	if (IsOccupied()) { return; }
-
-	ActionState = EActionState::EAS_Dodging;
 
 	if (IsMoving() && GetStamina() >= RollStaminaCost)
 	{
@@ -567,11 +645,14 @@ void APlayerCharacter::RollOrBackStep(const FInputActionValue& value)
 		PlayMontage(RollMontage, FName("Roll1"));
 		UseStamina(RollStaminaCost);
 		CreateFields(GetActorLocation());
+		ActionState = EActionState::EAS_Dodging;
 	}
 	else if (IsNotMoving() && GetStamina() >= BackstepStaminaCost)
 	{
 		PlayMontage(BackStepMontage, FName("Default"));
 		UseStamina(BackstepStaminaCost);
+		bCanUseDodgeBackAttack = true;
+		ActionState = EActionState::EAS_Dodging;
 	}
 }
 
@@ -677,6 +758,93 @@ void APlayerCharacter::SwitchRightHand(const FInputActionValue& value)
 void APlayerCharacter::SwitchLeftHand(const FInputActionValue& value)
 {
 	SetShieldSocketOnEquipping();
+}
+
+void APlayerCharacter::Sprint(const FInputActionValue& value)
+{
+	if (IsMoving())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+		StopStaminaRecharge();
+		StartDrainStamina();
+	}
+}
+
+void APlayerCharacter::StopSprint(const FInputActionValue& value)
+{
+	GetCharacterMovement()->MaxWalkSpeed = Walkspeed;
+	StopDrainStamina();
+	StartStaminaRecharge();
+}
+
+void APlayerCharacter::TapR1(const FInputActionValue& value)
+{
+	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost || ActionState == EActionState::EAS_HitReacting || IsOccupied()) { return; }
+
+
+	if (bCanBackStabOrKickOrJumpAttack)
+	{
+		if (CurrentEnemyTarget && IsFacing(CurrentEnemyTarget) && InTargetRange(CurrentEnemyTarget, BackStabAttackRange) && CurrentEnemyTarget->ActorHasTag("Staggered"))
+		{
+			CameraBoom->TargetArmLength = BackStabCameraBoomTargetLength;
+			PlayMontage(AttackMontageOneHanded, FName("BackStab"));
+			IHitInterface* CurrenyEnemyHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
+
+			if (CurrenyEnemyHitInterface && EquippedWeapon)
+			{
+				SetActorLocation(CurrentEnemyTargetHitInterface->GetFrontStabLocation());
+				CurrentEnemyTargetHitInterface->PlayBackStab();
+				UGameplayStatics::ApplyDamage(CurrentEnemyTarget, EquippedWeapon->GetBackStabDamage(), GetController(), this, UDamageType::StaticClass());
+			}
+
+
+			ActionState = EActionState::EAS_Attacking;
+			float delta = 1.f;
+			LockOn(delta);
+			return;
+		}
+		else if (CurrentEnemyTarget && EnemyIsFacingMe(CurrentEnemyTarget) && InTargetRange(CurrentEnemyTarget, BackStabAttackRange) && CurrentEnemyTarget->ActorHasTag("Boss") == false)
+		{
+			CameraBoom->TargetArmLength = BackStabCameraBoomTargetLength;
+			PlayMontage(AttackMontageOneHanded, FName("BackStab"));
+			IHitInterface* CurrenyEnemyHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
+
+			if (CurrenyEnemyHitInterface && EquippedWeapon)
+			{
+				SetActorLocation(CurrentEnemyTargetHitInterface->GetBackStabLocation());
+				CurrentEnemyTargetHitInterface->PlayBackStab();
+				UGameplayStatics::ApplyDamage(CurrentEnemyTarget, EquippedWeapon->GetBackStabDamage(), GetController(), this, UDamageType::StaticClass());
+			}
+
+
+			ActionState = EActionState::EAS_Attacking;
+			float delta = 1.f;
+			LockOn(delta);
+			return;
+		}
+
+		PlayMontage(AttackMontageOneHanded, FName("Kick"));
+		ActionState = EActionState::EAS_Attacking;
+	}
+}
+
+void APlayerCharacter::TapR2(const FInputActionValue& value)
+{
+	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost || ActionState == EActionState::EAS_HitReacting || IsOccupied()) { return; }
+
+	if (bCanBackStabOrKickOrJumpAttack)
+	{
+		PlayMontage(AttackMontageOneHanded, FName("JumpAttack"));
+		ActionState = EActionState::EAS_Attacking;
+	}
+}
+
+void APlayerCharacter::PressedL2(const FInputActionValue& value)
+{
+	if (IsOccupied() || EquippedShield == nullptr || IsShieldEquipped() == false && IsEquippedSwordAndShield() == false) { return; }
+
+	PlayMontage(BlockMontage, FName("Parry"));
+	ActionState = EActionState::EAS_Parrying;
 }
 
 void APlayerCharacter::OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -1032,7 +1200,6 @@ void APlayerCharacter::StartStaminaRecharge()
 {
 	if (AttributeComponent)
 	{
-		Tags.AddUnique(FName("RechargeingStamina"));
 		AttributeComponent->StartStaminaRecharge();
 	}
 }
@@ -1042,6 +1209,23 @@ void APlayerCharacter::StopStaminaRecharge()
 	if (AttributeComponent)
 	{
 		AttributeComponent->StopStaminaRecharge();
+	}
+}
+
+void APlayerCharacter::StartDrainStamina()
+{
+	if (AttributeComponent)
+	{
+		AttributeComponent->StartDrainStamina();
+	}
+}
+
+void APlayerCharacter::StopDrainStamina()
+{
+	if (AttributeComponent)
+	{
+		AttributeComponent->StopDrainStamina();
+		StartStaminaRecharge();
 	}
 }
 
@@ -1105,9 +1289,15 @@ void APlayerCharacter::SetupHUD()
 
 void APlayerCharacter::UpdateHUD(const float& DeltaTime)
 {
-	if (ActorHasTag(FName("RechargeingStamina")) && HUDOverlay && AttributeComponent)
+	if (HUDOverlay && AttributeComponent)
 	{
 		AttributeComponent->RechargeStamina(DeltaTime);
+		HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
+	}
+	
+	if (HUDOverlay && AttributeComponent)
+	{
+		AttributeComponent->DrainStamina(DeltaTime);
 		HUDOverlay->SetStaminaBarPercent(AttributeComponent->GetStaminaPercent(), AttributeComponent->GetMaxStamina());
 	}
 }
@@ -1266,4 +1456,9 @@ void APlayerCharacter::TurnClimbingOn()
 	{
 		LadderInUse->SetLadderInUse();
 	}
+}
+
+void APlayerCharacter::SetCannotBackstabOrKickOrJumpAttack()
+{
+	bCanBackStabOrKickOrJumpAttack = false;
 }

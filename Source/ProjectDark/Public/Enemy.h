@@ -53,8 +53,6 @@ protected:
 	void Block();
 	void Strafe();
 
-	bool InTargetRange(AActor* Target, const double& Radius);
-	bool InTargetRange(const FVector& Target, const double& Radius);
 	void AddInitialTags();
 
 	UFUNCTION(BlueprintCallable)

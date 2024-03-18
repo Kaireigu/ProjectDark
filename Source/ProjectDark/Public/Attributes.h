@@ -21,7 +21,10 @@ public:
 	void UseStamina(const float& StaminaAmount);
 	void StartStaminaRecharge();
 	void StopStaminaRecharge();
+	void StartDrainStamina();
+	void StopDrainStamina();
 	void RechargeStamina(const float& DeltaTime);
+	void DrainStamina(const float& DeltaTime);
 	void SetInitialHealthAndStaminaValues();
 
 protected:
@@ -45,6 +48,7 @@ protected:
 private:
 
 	bool bShouldRechargeStamina = false;
+	bool bShouldDrainStamina = false;
 
 public:
 	FORCEINLINE bool IsAlive() { return Health > 0.f; }

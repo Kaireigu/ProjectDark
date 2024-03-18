@@ -25,10 +25,19 @@ public:
 	void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) override;
 
 	virtual void PlayHitReactMontage(const FVector& ImpactPoint);
+	void PlayStaggerMontage();
+	void PlayBackStab() override;
+	FVector GetBackStabLocation() override;
+	FVector GetFrontStabLocation() override;
+	bool IsAnyMontagePlaying();
 
 	bool IsBehind(const AActor* OtherActor);
 	bool IsFacing(const AActor* OtherActor);
+	bool EnemyIsFacingMe(const AActor* OtherActor);
 	bool IsNotInFront(const AActor* OtherActor);
+
+	void AddBackStabTag();
+	void RemoveBackStabTag();
 
 protected:
 
@@ -39,6 +48,9 @@ protected:
 	double GetTheta(const FVector& Forward, const FVector& OtherActorLocation);
 
 	virtual void Die();
+
+	bool InTargetRange(AActor* Target, const double& Radius);
+	bool InTargetRange(const FVector& Target, const double& Radius);
 
 	UFUNCTION(BlueprintCallable)
 	void EnableWeaponCollision();
@@ -60,6 +72,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	UAttributes* AttributeComponent;
+
+	UPROPERTY(EditAnywhere)
+	USceneComponent* FrontStabLocation;
+
+	UPROPERTY(EditAnywhere)
+	USceneComponent* BackStabLocation;
 
 private:
 

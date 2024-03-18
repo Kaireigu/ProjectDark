@@ -24,3 +24,18 @@ void IHitInterface::RechargeStamina()
 {
 
 }
+
+void IHitInterface::PlayBackStab()
+{
+
+}
+
+FVector IHitInterface::GetBackStabLocation()
+{
+	return FVector::ZeroVector;
+}
+
+FVector IHitInterface::GetFrontStabLocation()
+{
+	return FVector::ZeroVector;
+}

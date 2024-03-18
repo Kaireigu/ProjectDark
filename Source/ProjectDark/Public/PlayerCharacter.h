@@ -87,6 +87,12 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void StopMovement();
 
+	UFUNCTION(BlueprintCallable)
+	void AddParryTag();
+
+	UFUNCTION(BlueprintCallable)
+	void RemoveParryTag();
+
 	void UseStamina(const float& StaminaAmount) override;
 	void RechargeStamina() override;
 
@@ -99,11 +105,29 @@ protected:
 	UPROPERTY(VisibleInstanceOnly)
 	bool bCanInteractWithCheckpoint = false;
 
+	UPROPERTY(VisibleInstanceOnly)
+	bool bCanBackStabOrKickOrJumpAttack = false;
+
 	UPROPERTY(EditAnywhere, Category = Movement)
 	float OrientRotationRateYaw = 1080.f;
 
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float Walkspeed= 200.f;
+
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float SprintSpeed = 400.f;
+
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float TimeBufferToBackStab = 0.25f;
+
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float BackStabAttackRange = 200.f;
+
 	UPROPERTY(EditAnywhere, Category = "Stamina Cost")
 	float LightAttackStaminaCost = 20.f;
+
+	UPROPERTY(EditAnywhere, Category = "Stamina Cost")
+	float HeavyAttackStaminaCost = 40.f;
 
 	UPROPERTY(EditAnywhere, Category = "Stamina Cost")
 	float BackstepStaminaCost = 20.f;
@@ -153,6 +177,24 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* SelectLeftHandAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* HeavyAttackAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* SprintAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* StopSprintAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* TapR1Action;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* TapR2Action;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* PressedL2Action;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontageOneHanded;
 
@@ -190,6 +232,12 @@ protected:
 	float CameraHeightLockedOn = 80.f;
 
 	UPROPERTY(EditAnywhere, Category = Camera)
+	float CameraBoomTargetLength = 300.f;
+
+	UPROPERTY(EditAnywhere, Category = Camera)
+	float BackStabCameraBoomTargetLength = 200.f;
+
+	UPROPERTY(EditAnywhere, Category = Camera)
 	float LockOffDistance = 2000.f;
 
 	UPROPERTY(VisibleInstanceOnly)
@@ -210,6 +258,7 @@ private:
 	void Look(const FInputActionValue& value);
 	void EKeyPressed(const FInputActionValue& value);
 	void Attack(const FInputActionValue& value);
+	void HeavyAttack(const FInputActionValue& value);
 	void RollOrBackStep(const FInputActionValue& value);
 	void LockOn(const FInputActionValue& value);
 	void SwitchLockOnTarget(const FInputActionValue& value);
@@ -218,6 +267,12 @@ private:
 	void UseItem(const FInputActionValue& value);
 	void SwitchRightHand(const FInputActionValue& value);
 	void SwitchLeftHand(const FInputActionValue& value);
+	void Sprint(const FInputActionValue& value);
+	void StopSprint(const FInputActionValue& value);
+	void TapR1(const FInputActionValue& value);
+	void TapR2(const FInputActionValue& value);
+	void PressedL2(const FInputActionValue& value);
+
 
 	UFUNCTION()
 	void OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -255,6 +310,7 @@ private:
 	bool bCanGetOnLadder = false;
 	bool bCanGetOffLadder = false;
 	bool bShouldDoIKTrace = true;
+	bool bCanUseDodgeBackAttack = false;
 
 	FVector LadderPosition;
 	FVector LadderStartPosition;
@@ -265,6 +321,8 @@ private:
 	void ReceiveDamage(const float& DamageAmount);
 	void StartStaminaRecharge();
 	void StopStaminaRecharge();
+	void StartDrainStamina();
+	void StopDrainStamina();
 	float GetStamina();
 
 	void AddActorTags();
@@ -276,6 +334,9 @@ private:
 	void PickUpPotion();
 	void CheckCanSitAtCheckpoint();
 	void TurnClimbingOn();
+	void SetCannotBackstabOrKickOrJumpAttack();
+
+	FTimerHandle CannotBackstabTimerHandle;
 
 	UPROPERTY(VisibleInstanceOnly)
 	TArray<AActor*> LockableEnemies;
