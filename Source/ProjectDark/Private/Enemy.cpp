@@ -214,6 +214,7 @@ void AEnemy::MontageEnd()
 
 	EnemyState = EEnemyState::EES_Patrolling;
 	Tags.Remove(FName("Blocking"));
+	Tags.Remove(FName("Staggered"));
 }
 
 void AEnemy::MoveToTarget(AActor* Target)
@@ -430,21 +431,6 @@ void AEnemy::FireArrow()
 		}
 		
 	}
-}
-
-
-bool AEnemy::InTargetRange(AActor* Target, const double& Radius)
-{
-	const double DistanceToTarget = (Target->GetActorLocation() - GetActorLocation()).Size();
-
-	return DistanceToTarget <= Radius;
-}
-
-bool AEnemy::InTargetRange(const FVector& Target, const double& Radius)
-{
-	const double DistanceToTarget = (Target - GetActorLocation()).Size();
-
-	return DistanceToTarget <= Radius;
 }
 
 void AEnemy::AddInitialTags()

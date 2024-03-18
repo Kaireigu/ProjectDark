@@ -29,4 +29,7 @@ public:
 	virtual void BeLockedOff();
 	virtual void UseStamina(const float& StaminaAmount);
 	virtual void RechargeStamina();
+	virtual void PlayBackStab();
+	virtual FVector GetBackStabLocation();
+	virtual FVector GetFrontStabLocation();
 };

@@ -101,7 +101,6 @@ void APlayerCharacter::SetCanGetOffLadder(const bool& CanGetOff, const FVector& 
 	LadderStartPosition = StartPosition;
 	LadderFacingRotation = StartRotation;
 	LadderInUse = Ladder;
-	GEngine->AddOnScreenDebugMessage(1, 2.f, FColor::Red, FString("CanGetOffCalled"));
 }
 
 void APlayerCharacter::SetHUDInteractText(const FString& InteractText)
@@ -196,6 +195,12 @@ void APlayerCharacter::AttackEnd()
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 
 	bCanUseDodgeBackAttack = false;
+	RemoveBackStabTag();
+
+	if (CameraBoom)
+	{
+		CameraBoom->TargetArmLength = CameraBoomTargetLength;
+	}
 
 	if (bComboActive)
 	{
@@ -212,6 +217,7 @@ void APlayerCharacter::AttackEnd()
 void APlayerCharacter::SetUnoccupied()
 {
 	ActionState = EActionState::EAS_Unoccupied;
+	RemoveParryTag();
 	bCanUseDodgeBackAttack = false;
 	StartStaminaRecharge();
 
@@ -329,6 +335,16 @@ void APlayerCharacter::StopMovement()
 	GetCharacterMovement()->Velocity = FVector::ZeroVector;
 }
 
+void APlayerCharacter::AddParryTag()
+{
+	Tags.AddUnique(FName("Parrying"));
+}
+
+void APlayerCharacter::RemoveParryTag()
+{
+	Tags.Remove(FName("Parrying"));
+}
+
 void APlayerCharacter::SetDefaultControllerValues()
 {
 	bUseControllerRotationPitch = false;
@@ -346,6 +362,7 @@ void APlayerCharacter::InitialiseComponents()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
 	CameraBoom->SetupAttachment(GetRootComponent());
 	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->TargetArmLength = CameraBoomTargetLength;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(CameraBoom);
@@ -472,6 +489,11 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 		{
 			EnhancedInputComponent->BindAction(TapR2Action, ETriggerEvent::Triggered, this, &APlayerCharacter::TapR2);
 		}
+
+		if (PressedL2Action)
+		{
+			EnhancedInputComponent->BindAction(PressedL2Action, ETriggerEvent::Triggered, this, &APlayerCharacter::PressedL2);
+		}
 	}
 }
 
@@ -578,7 +600,6 @@ void APlayerCharacter::Attack(const FInputActionValue& value)
 	{
 		bCanUseDodgeBackAttack = false;
 		PlayMontage(AttackMontageOneHanded, FName("DodgeBackAttack"));
-		GEngine->AddOnScreenDebugMessage(1, 2.f, FColor::Red, FString("Montage was Played my Friend"));
 		UseStamina(LightAttackStaminaCost);
 		ActionState = EActionState::EAS_Attacking;
 		return;
@@ -760,8 +781,48 @@ void APlayerCharacter::TapR1(const FInputActionValue& value)
 {
 	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost || ActionState == EActionState::EAS_HitReacting || IsOccupied()) { return; }
 
+
 	if (bCanBackStabOrKickOrJumpAttack)
 	{
+		if (CurrentEnemyTarget && IsFacing(CurrentEnemyTarget) && InTargetRange(CurrentEnemyTarget, BackStabAttackRange) && CurrentEnemyTarget->ActorHasTag("Staggered"))
+		{
+			CameraBoom->TargetArmLength = BackStabCameraBoomTargetLength;
+			PlayMontage(AttackMontageOneHanded, FName("BackStab"));
+			IHitInterface* CurrenyEnemyHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
+
+			if (CurrenyEnemyHitInterface && EquippedWeapon)
+			{
+				SetActorLocation(CurrentEnemyTargetHitInterface->GetFrontStabLocation());
+				CurrentEnemyTargetHitInterface->PlayBackStab();
+				UGameplayStatics::ApplyDamage(CurrentEnemyTarget, EquippedWeapon->GetBackStabDamage(), GetController(), this, UDamageType::StaticClass());
+			}
+
+
+			ActionState = EActionState::EAS_Attacking;
+			float delta = 1.f;
+			LockOn(delta);
+			return;
+		}
+		else if (CurrentEnemyTarget && EnemyIsFacingMe(CurrentEnemyTarget) && InTargetRange(CurrentEnemyTarget, BackStabAttackRange) && CurrentEnemyTarget->ActorHasTag("Boss") == false)
+		{
+			CameraBoom->TargetArmLength = BackStabCameraBoomTargetLength;
+			PlayMontage(AttackMontageOneHanded, FName("BackStab"));
+			IHitInterface* CurrenyEnemyHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
+
+			if (CurrenyEnemyHitInterface && EquippedWeapon)
+			{
+				SetActorLocation(CurrentEnemyTargetHitInterface->GetBackStabLocation());
+				CurrentEnemyTargetHitInterface->PlayBackStab();
+				UGameplayStatics::ApplyDamage(CurrentEnemyTarget, EquippedWeapon->GetBackStabDamage(), GetController(), this, UDamageType::StaticClass());
+			}
+
+
+			ActionState = EActionState::EAS_Attacking;
+			float delta = 1.f;
+			LockOn(delta);
+			return;
+		}
+
 		PlayMontage(AttackMontageOneHanded, FName("Kick"));
 		ActionState = EActionState::EAS_Attacking;
 	}
@@ -776,6 +837,14 @@ void APlayerCharacter::TapR2(const FInputActionValue& value)
 		PlayMontage(AttackMontageOneHanded, FName("JumpAttack"));
 		ActionState = EActionState::EAS_Attacking;
 	}
+}
+
+void APlayerCharacter::PressedL2(const FInputActionValue& value)
+{
+	if (IsOccupied() || EquippedShield == nullptr || IsShieldEquipped() == false && IsEquippedSwordAndShield() == false) { return; }
+
+	PlayMontage(BlockMontage, FName("Parry"));
+	ActionState = EActionState::EAS_Parrying;
 }
 
 void APlayerCharacter::OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

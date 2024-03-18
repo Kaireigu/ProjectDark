@@ -42,6 +42,9 @@ protected:
 	float WeaponDamage = 20.f;
 
 	UPROPERTY(EditAnywhere, Category = Properties)
+	float BackStabDamage = 50.f;
+
+	UPROPERTY(EditAnywhere, Category = Properties)
 	FVector HalfSize = FVector(5.f, 5.f, 5.f);
 
 private:
@@ -51,5 +54,7 @@ private:
 
 public:
 	void SetWeaponCollision(const bool& Collision);
+	FORCEINLINE const float& GetWeaponDamage() { return WeaponDamage; }
+	FORCEINLINE const float& GetBackStabDamage() { return BackStabDamage; }
 
 };

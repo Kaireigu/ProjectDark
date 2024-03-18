@@ -87,6 +87,12 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void StopMovement();
 
+	UFUNCTION(BlueprintCallable)
+	void AddParryTag();
+
+	UFUNCTION(BlueprintCallable)
+	void RemoveParryTag();
+
 	void UseStamina(const float& StaminaAmount) override;
 	void RechargeStamina() override;
 
@@ -113,6 +119,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = Movement)
 	float TimeBufferToBackStab = 0.25f;
+
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float BackStabAttackRange = 200.f;
 
 	UPROPERTY(EditAnywhere, Category = "Stamina Cost")
 	float LightAttackStaminaCost = 20.f;
@@ -183,6 +192,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* TapR2Action;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* PressedL2Action;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontageOneHanded;
 
@@ -220,6 +232,12 @@ protected:
 	float CameraHeightLockedOn = 80.f;
 
 	UPROPERTY(EditAnywhere, Category = Camera)
+	float CameraBoomTargetLength = 300.f;
+
+	UPROPERTY(EditAnywhere, Category = Camera)
+	float BackStabCameraBoomTargetLength = 200.f;
+
+	UPROPERTY(EditAnywhere, Category = Camera)
 	float LockOffDistance = 2000.f;
 
 	UPROPERTY(VisibleInstanceOnly)
@@ -253,6 +271,7 @@ private:
 	void StopSprint(const FInputActionValue& value);
 	void TapR1(const FInputActionValue& value);
 	void TapR2(const FInputActionValue& value);
+	void PressedL2(const FInputActionValue& value);
 
 
 	UFUNCTION()

@@ -15,6 +15,12 @@ ABaseCharacter::ABaseCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 
 	AttributeComponent = CreateDefaultSubobject<UAttributes>(TEXT("Attribute Component"));
+
+	BackStabLocation = CreateDefaultSubobject<USceneComponent>(TEXT("BackStab Location"));
+	BackStabLocation->SetupAttachment(GetRootComponent());
+
+	FrontStabLocation = CreateDefaultSubobject<USceneComponent>(TEXT("FrontStab Location"));
+	FrontStabLocation->SetupAttachment(GetRootComponent());
 }
 
 void ABaseCharacter::Tick(float DeltaTime)
@@ -85,6 +91,66 @@ void ABaseCharacter::PlayHitReactMontage(const FVector& ImpactPoint)
 	}
 }
 
+void ABaseCharacter::PlayStaggerMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && HitReactMontage)
+	{
+		PlayMontage(HitReactMontage, FName("Stagger"));
+		Tags.AddUnique(FName("Staggered"));
+	}
+}
+
+void ABaseCharacter::PlayBackStab()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && HitReactMontage)
+	{
+		AnimInstance->Montage_Stop(0.f, HitReactMontage);
+		PlayMontage(HitReactMontage, FName("BackStab"));
+		Tags.Remove(FName("Staggered"));
+		AddBackStabTag();
+	}
+}
+
+FVector ABaseCharacter::GetBackStabLocation()
+{
+	if (BackStabLocation)
+	{
+		return BackStabLocation->GetComponentLocation();
+	}
+	else
+	{
+		return FVector::ZeroVector;
+	}
+}
+
+FVector ABaseCharacter::GetFrontStabLocation()
+{
+	if (FrontStabLocation)
+	{
+		return FrontStabLocation->GetComponentLocation();
+	}
+	else
+	{
+		return FVector::ZeroVector;
+	}
+}
+
+bool ABaseCharacter::IsAnyMontagePlaying()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance)
+	{
+		return AnimInstance->IsAnyMontagePlaying();
+	}
+
+	return false;
+}
+
 bool ABaseCharacter::IsBehind(const AActor* OtherActor)
 {
 	double Theta = GetTheta(GetActorForwardVector(), OtherActor->GetActorLocation());
@@ -122,6 +188,25 @@ bool ABaseCharacter::IsFacing(const AActor* OtherActor)
 	}
 }
 
+bool ABaseCharacter::EnemyIsFacingMe(const AActor* OtherActor)
+{
+	double Theta = GetTheta(OtherActor->GetActorForwardVector(), GetActorLocation());
+
+	if (Theta > 0.f && Theta <= 135.f)
+	{
+		return true;
+	}
+	else if (Theta < 0.f && Theta >= -135.f)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+
+}
+
 bool ABaseCharacter::IsNotInFront(const AActor* OtherActor)
 {
 	double Theta = GetTheta(GetActorForwardVector(), OtherActor->GetActorLocation());
@@ -134,6 +219,16 @@ bool ABaseCharacter::IsNotInFront(const AActor* OtherActor)
 	{
 		return true;
 	}
+}
+
+void ABaseCharacter::AddBackStabTag()
+{
+	Tags.AddUnique(FName("BackStabActive"));
+}
+
+void ABaseCharacter::RemoveBackStabTag()
+{
+	Tags.Remove(FName("BackStabActive"));
 }
 
 double ABaseCharacter::GetTheta(const FVector& Forward, const FVector& OtherActorLocation)
@@ -160,6 +255,20 @@ double ABaseCharacter::GetTheta(const FVector& Forward, const FVector& OtherActo
 void ABaseCharacter::Die()
 {
 	PlayMontage(DeathMontage, FName("Death1"));
+}
+
+bool ABaseCharacter::InTargetRange(AActor* Target, const double& Radius)
+{
+	const double DistanceToTarget = (Target->GetActorLocation() - GetActorLocation()).Size();
+
+	return DistanceToTarget <= Radius;
+}
+
+bool ABaseCharacter::InTargetRange(const FVector& Target, const double& Radius)
+{
+	const double DistanceToTarget = (Target - GetActorLocation()).Size();
+
+	return DistanceToTarget <= Radius;
 }
 
 void ABaseCharacter::EnableWeaponCollision()
