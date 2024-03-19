@@ -281,6 +281,8 @@ void AEnemy::CheckDistanceToCombatTarget()
 		}
 		else if (InTargetRange(CombatTarget, AttackRadius))
 		{
+			LastKnownLocationOfCombatTarget = CombatTarget->GetActorLocation();
+
 			int32 Selection = FMath::RandRange(0, 3);
 
 			if (HasShield)
@@ -488,7 +490,7 @@ FVector AEnemy::GetTranslationWarpTarget()
 	if (CombatTarget == nullptr) { return FVector(); }
 
 	const FVector CombatTargetLocation = CombatTarget->GetActorLocation();
-	const FVector Location = GetActorLocation();
+	const FVector Location = LastKnownLocationOfCombatTarget;
 	FVector TargetToMe = (Location - CombatTargetLocation).GetSafeNormal();
 	TargetToMe *= WarpTargetDistance;
 

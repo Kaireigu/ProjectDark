@@ -80,6 +80,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	TSubclassOf<AShield> ShieldClass;
 
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TSubclassOf<AActor> TargetPoint;
+
 	UPROPERTY()
 	AShield* EquippedShield = nullptr;
 
@@ -106,6 +109,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly)
 	AActor* CombatTarget;
+
+	UPROPERTY(VisibleInstanceOnly)
+	FVector LastKnownLocationOfCombatTarget;
 
 	UPROPERTY(EditAnywhere)
 	UPawnSensingComponent* PawnSensingComponent;
