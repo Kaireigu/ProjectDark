@@ -19,6 +19,7 @@ class PROJECTDARK_API UHealthBarComponent : public UWidgetComponent
 public:
 
 	void SetHealthPercent(const float& Percent);
+	void HideLockOnSymbol();
 
 private:
 

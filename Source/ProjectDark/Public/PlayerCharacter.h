@@ -93,6 +93,9 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void RemoveParryTag();
 
+	UFUNCTION(BlueprintCallable)
+	void KickEnemy();
+
 	void UseStamina(const float& StaminaAmount) override;
 	void RechargeStamina() override;
 
@@ -376,4 +379,7 @@ public:
 	FORCEINLINE ECharacterState GetCharacterState() { return CharacterState; }
 	FORCEINLINE EActionState GetActionState() { return ActionState; }
 	FORCEINLINE bool GetShouldDoIKTrace() { return bShouldDoIKTrace; }
+	FORCEINLINE bool GetIsLockedOn() { return CurrentEnemyTarget != nullptr; }
+	double GetMovementX();
+	double GetMovementY();
 };

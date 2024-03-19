@@ -28,6 +28,15 @@ protected:
 	bool IsFalling;
 
 	UPROPERTY(BlueprintReadOnly)
+	bool IsLockedOn;
+
+	UPROPERTY(BlueprintReadOnly)
+	double MovementDirectionX;
+
+	UPROPERTY(BlueprintReadOnly)
+	double MovementDirectionY;
+
+	UPROPERTY(BlueprintReadOnly)
 	bool bShouldDoIKTrace = true;
 
 	UPROPERTY(BlueprintReadOnly)

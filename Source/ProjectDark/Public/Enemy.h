@@ -37,6 +37,7 @@ public:
 	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
 	void BeLockedOnTo() override;
 	void BeLockedOff() override;
+	void InterfacePlayHitReact(const FVector& ImpactPoint) override;
 	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	FOnEnemyDeath EnemyDied;

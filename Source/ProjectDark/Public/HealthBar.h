@@ -7,6 +7,7 @@
 #include "HealthBar.generated.h"
 
 class UProgressBar;
+class UImage;
 
 /**
  * 
@@ -20,5 +21,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthBar;
-	
+
+	UPROPERTY(meta = (BindWidget))
+	UImage* LockOnSymbol;
+
 };

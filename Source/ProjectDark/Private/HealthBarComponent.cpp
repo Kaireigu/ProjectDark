@@ -3,6 +3,7 @@
 
 #include "HealthBarComponent.h"
 #include "HealthBar.h"
+#include "Components/Image.h"
 #include "Components/ProgressBar.h"
 
 void UHealthBarComponent::SetHealthPercent(const float& Percent)
@@ -14,5 +15,13 @@ void UHealthBarComponent::SetHealthPercent(const float& Percent)
 	if (HealthBarWidget && HealthBarWidget->HealthBar)
 	{
 		HealthBarWidget->HealthBar->SetPercent(Percent);
+	}
+}
+
+void UHealthBarComponent::HideLockOnSymbol()
+{
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->LockOnSymbol->SetVisibility(ESlateVisibility::Hidden);
 	}
 }

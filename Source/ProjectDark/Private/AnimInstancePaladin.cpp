@@ -29,5 +29,8 @@ void UAnimInstancePaladin::NativeUpdateAnimation(float DeltaTime)
 		CharacterState = PlayerCharacter->GetCharacterState();
 		ActionState = PlayerCharacter->GetActionState();
 		bShouldDoIKTrace = PlayerCharacter->GetShouldDoIKTrace();
+		IsLockedOn = PlayerCharacter->GetIsLockedOn();
+		MovementDirectionX = FMath::Clamp(PlayerCharacter->GetMovementX(), -1.f, 1.f);
+		MovementDirectionY = FMath::Clamp(PlayerCharacter->GetMovementY(), -1.f, 1.f);
 	}
 }

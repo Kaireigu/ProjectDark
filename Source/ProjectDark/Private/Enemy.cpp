@@ -81,6 +81,12 @@ void AEnemy::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 	
 	Super::GetHit(OtherActor, ImpactPoint);
 
+	if (OtherActor)
+	{
+		CombatTarget = OtherActor;
+		EnemyState = EEnemyState::EES_Attacking;
+	}
+
 }
 
 void AEnemy::BeLockedOnTo()
@@ -90,7 +96,15 @@ void AEnemy::BeLockedOnTo()
 
 void AEnemy::BeLockedOff()
 {
-	HealthBarComponent->SetVisibility(false);
+	if (HealthBarComponent)
+	{
+		HealthBarComponent->SetVisibility(false);
+	}
+}
+
+void AEnemy::InterfacePlayHitReact(const FVector& ImpactPoint)
+{
+	PlayHitReactMontage(ImpactPoint);
 }
 
 float AEnemy::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -176,6 +190,12 @@ void AEnemy::Die()
 	Super::Die();
 	EnemyState = EEnemyState::EES_Dead;
 	EnemyDied.Broadcast(this);
+	Tags.Remove(FName("Lockable"));
+
+	if (HealthBarComponent)
+	{
+		HealthBarComponent->HideLockOnSymbol();
+	}
 
 	if (EquippedWeapon) { EquippedWeapon->Destroy(); }
 	if (EquippedShield) { EquippedShield->Destroy(); }

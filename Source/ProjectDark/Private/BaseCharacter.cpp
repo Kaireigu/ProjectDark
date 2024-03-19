@@ -190,7 +190,9 @@ bool ABaseCharacter::IsFacing(const AActor* OtherActor)
 
 bool ABaseCharacter::EnemyIsFacingMe(const AActor* OtherActor)
 {
-	double Theta = GetTheta(OtherActor->GetActorForwardVector(), GetActorLocation());
+	double Theta = GetThetaFromActors(OtherActor, this);
+
+	GEngine->AddOnScreenDebugMessage(1, 2.f, FColor::Red, FString::SanitizeFloat(Theta));
 
 	if (Theta > 0.f && Theta <= 135.f)
 	{
@@ -243,6 +245,27 @@ double ABaseCharacter::GetTheta(const FVector& Forward, const FVector& OtherActo
 	Theta = UKismetMathLibrary::RadiansToDegrees(Theta);
 
 	const FVector CrossProduct = FVector::CrossProduct(Forward, ToEnemy);
+
+	if (CrossProduct.Z < 0)
+	{
+		Theta *= -1.f;
+	}
+
+	return Theta;
+}
+
+double ABaseCharacter::GetThetaFromActors(const AActor* ForwardVectorActor, const AActor* LocationActor)
+{
+	const FVector EnemyLocation = LocationActor->GetActorLocation();
+	const FVector EnemyLocationLowered = FVector(EnemyLocation.X, EnemyLocation.Y, ForwardVectorActor->GetActorLocation().Z);
+	const FVector ForwardVector = ForwardVectorActor->GetActorForwardVector();
+	const FVector ToEnemy = (EnemyLocationLowered - ForwardVectorActor->GetActorLocation()).GetSafeNormal();
+
+	const double CosTheta = FVector::DotProduct(ForwardVector, ToEnemy);
+	double Theta = UKismetMathLibrary::Acos(CosTheta);
+	Theta = UKismetMathLibrary::RadiansToDegrees(Theta);
+
+	const FVector CrossProduct = FVector::CrossProduct(ForwardVector, ToEnemy);
 
 	if (CrossProduct.Z < 0)
 	{

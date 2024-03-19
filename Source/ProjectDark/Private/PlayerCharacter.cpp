@@ -345,6 +345,14 @@ void APlayerCharacter::RemoveParryTag()
 	Tags.Remove(FName("Parrying"));
 }
 
+void APlayerCharacter::KickEnemy()
+{
+	if (CurrentEnemyTargetHitInterface)
+	{
+		CurrentEnemyTargetHitInterface->InterfacePlayHitReact(GetActorLocation());
+	}
+}
+
 void APlayerCharacter::SetDefaultControllerValues()
 {
 	bUseControllerRotationPitch = false;
@@ -527,7 +535,7 @@ void APlayerCharacter::Move(const FInputActionValue& value)
 		}
 	}
 
-	if (IsOccupied()) { return; }
+	if (IsOccupied() && ActionState != EActionState::EAS_Blocking) { return; }
 
 	const FVector2D Movement = value.Get<FVector2D>();
 
@@ -673,7 +681,7 @@ void APlayerCharacter::LockOn(const FInputActionValue& value)
 
 void APlayerCharacter::SwitchLockOnTarget(const FInputActionValue& value)
 {
-	if (IsOccupied()) { return; }
+	if (IsOccupied() && ActionState != EActionState::EAS_Blocking) { return; }
 
 	const float Input = value.Get<float>();
 
@@ -763,7 +771,7 @@ void APlayerCharacter::SwitchLeftHand(const FInputActionValue& value)
 
 void APlayerCharacter::Sprint(const FInputActionValue& value)
 {
-	if (IsMoving())
+	if (IsMoving() && GetIsLockedOn() == false)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
 		StopStaminaRecharge();
@@ -800,11 +808,9 @@ void APlayerCharacter::TapR1(const FInputActionValue& value)
 
 
 			ActionState = EActionState::EAS_Attacking;
-			float delta = 1.f;
-			LockOn(delta);
 			return;
 		}
-		else if (CurrentEnemyTarget && EnemyIsFacingMe(CurrentEnemyTarget) && InTargetRange(CurrentEnemyTarget, BackStabAttackRange) && CurrentEnemyTarget->ActorHasTag("Boss") == false)
+		else if (CurrentEnemyTarget && EnemyIsFacingMe(CurrentEnemyTarget) == false && InTargetRange(CurrentEnemyTarget, BackStabAttackRange) && CurrentEnemyTarget->ActorHasTag("Boss") == false)
 		{
 			CameraBoom->TargetArmLength = BackStabCameraBoomTargetLength;
 			PlayMontage(AttackMontageOneHanded, FName("BackStab"));
@@ -819,13 +825,14 @@ void APlayerCharacter::TapR1(const FInputActionValue& value)
 
 
 			ActionState = EActionState::EAS_Attacking;
-			float delta = 1.f;
-			LockOn(delta);
 			return;
 		}
+		else
+		{
+			PlayMontage(AttackMontageOneHanded, FName("Kick"));
+			ActionState = EActionState::EAS_Attacking;
+		}
 
-		PlayMontage(AttackMontageOneHanded, FName("Kick"));
-		ActionState = EActionState::EAS_Attacking;
 	}
 }
 
@@ -959,12 +966,9 @@ void APlayerCharacter::LookAtCurrentTarget(float& DeltaTime)
 		{
 			const FRotator FaceEnemyRotation = UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), EnemyLocation);
 			SetActorRotation(FRotator(GetActorRotation().Pitch, UKismetMathLibrary::Lerp(FaceEnemyRotation.Yaw, GetActorRotation().Yaw, DeltaTime), GetActorRotation().Roll));
-			Controller->SetControlRotation(UKismetMathLibrary::RLerp(CameraLookAtRotation, GetControlRotation(), DeltaTime, true));
 		}
-		else
-		{
-			Controller->SetControlRotation(UKismetMathLibrary::FindLookAtRotation(RaisedCameraLocation, RaisedEnemyLocation));
-		}
+
+		Controller->SetControlRotation(UKismetMathLibrary::RLerp(CameraLookAtRotation, GetControlRotation(), DeltaTime, true));
 	}
 }
 
@@ -1466,4 +1470,14 @@ void APlayerCharacter::TurnClimbingOn()
 void APlayerCharacter::SetCannotBackstabOrKickOrJumpAttack()
 {
 	bCanBackStabOrKickOrJumpAttack = false;
+}
+
+double APlayerCharacter::GetMovementX()
+{
+	return GetCharacterMovement()->Velocity.X;
+}
+
+double APlayerCharacter::GetMovementY()
+{
+	return GetCharacterMovement()->Velocity.Y;
 }
