@@ -46,6 +46,7 @@ protected:
 	void PlayMontage(UAnimMontage* Montage, const FName& SectionName);
 
 	double GetTheta(const FVector& Forward, const FVector& OtherActorLocation);
+	double GetThetaFromActors(const AActor* ForwardVectorActor, const AActor* LocationActor);
 
 	virtual void Die();
 

@@ -30,6 +30,7 @@ public:
 	virtual void UseStamina(const float& StaminaAmount);
 	virtual void RechargeStamina();
 	virtual void PlayBackStab();
+	virtual void InterfacePlayHitReact(const FVector& ImpactPoint);
 	virtual FVector GetBackStabLocation();
 	virtual FVector GetFrontStabLocation();
 };

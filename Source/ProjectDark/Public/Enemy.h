@@ -37,6 +37,7 @@ public:
 	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
 	void BeLockedOnTo() override;
 	void BeLockedOff() override;
+	void InterfacePlayHitReact(const FVector& ImpactPoint) override;
 	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	FOnEnemyDeath EnemyDied;
@@ -79,6 +80,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	TSubclassOf<AShield> ShieldClass;
 
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	TSubclassOf<AActor> TargetPoint;
+
 	UPROPERTY()
 	AShield* EquippedShield = nullptr;
 
@@ -105,6 +109,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly)
 	AActor* CombatTarget;
+
+	UPROPERTY(VisibleInstanceOnly)
+	FVector LastKnownLocationOfCombatTarget;
 
 	UPROPERTY(EditAnywhere)
 	UPawnSensingComponent* PawnSensingComponent;

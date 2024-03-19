@@ -30,6 +30,10 @@ void IHitInterface::PlayBackStab()
 
 }
 
+void IHitInterface::InterfacePlayHitReact(const FVector& ImpactPoint)
+{
+}
+
 FVector IHitInterface::GetBackStabLocation()
 {
 	return FVector::ZeroVector;
