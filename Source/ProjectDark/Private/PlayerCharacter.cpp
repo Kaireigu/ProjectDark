@@ -1013,36 +1013,48 @@ void APlayerCharacter::DetermineLeftAndRightTargets()
 void APlayerCharacter::DetermineFirstLockOnTarget()
 {
 	// DOES THIS ONCE Loops through Lockable Enemies and determines the current enemy target by which enemy is closest
-	if (bIsFirstTimeLockingOn)
+	if (bIsFirstTimeLockingOn == false || Camera == nullptr || LockableEnemies.Num() == 0) { return; }
+
+	bIsFirstTimeLockingOn = false;
+	CurrentEnemyTarget = LockableEnemies[0];
+	LockOnTargetPosition = LockableEnemies[0]->GetActorLocation();
+	ToEnemyAngle = GetTheta(Camera->GetForwardVector(), LockableEnemies[0]->GetActorLocation());
+
+	if (ToEnemyAngle < 0.f)
 	{
-		bIsFirstTimeLockingOn = false;
-		CurrentEnemyTarget = LockableEnemies[0];
-		LockOnTargetPosition = LockableEnemies[0]->GetActorLocation();
+		ToEnemyAngle *= -1.f;
+	}
 
-		for (int i = 0; i < LockableEnemies.Num(); i++)
+	for (int i = 0; i < LockableEnemies.Num(); i++)
+	{
+		FVector EnemyLocationElement = LockableEnemies[i]->GetActorLocation();
+		double ToEnemyAngleElement = GetTheta(Camera->GetForwardVector(), LockableEnemies[i]->GetActorLocation());
+
+		if (ToEnemyAngleElement < 0.f)
 		{
-			FVector EnemyLocationElement = LockableEnemies[i]->GetActorLocation();
-
-			if (UKismetMathLibrary::VSizeXY(EnemyLocationElement - GetActorLocation()) < UKismetMathLibrary::VSizeXY(LockOnTargetPosition - GetActorLocation()))
-			{
-				LockOnTargetPosition = EnemyLocationElement;
-				CurrentEnemyTarget = LockableEnemies[i];
-			}
+			ToEnemyAngleElement *= -1.f;
 		}
 
-		CurrentEnemyTargetHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
-
-		if (CurrentEnemyTargetHitInterface)
+		if (ToEnemyAngleElement < ToEnemyAngle)
 		{
-			CurrentEnemyTargetHitInterface->BeLockedOnTo();
+			ToEnemyAngle = ToEnemyAngleElement;
+			LockOnTargetPosition = LockableEnemies[i]->GetActorLocation();
+			CurrentEnemyTarget = LockableEnemies[i];
 		}
+	}
 
-		IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
+	CurrentEnemyTargetHitInterface = Cast<IHitInterface>(CurrentEnemyTarget);
 
-		if (IsDeadEnemy)
-		{
-			IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
-		}
+	if (CurrentEnemyTargetHitInterface)
+	{
+		CurrentEnemyTargetHitInterface->BeLockedOnTo();
+	}
+
+	IsDeadEnemy = Cast<AEnemy>(CurrentEnemyTarget);
+
+	if (IsDeadEnemy)
+	{
+		IsDeadEnemy->EnemyDied.AddUniqueDynamic(this, &APlayerCharacter::OnEnemyDeath);
 	}
 }
 

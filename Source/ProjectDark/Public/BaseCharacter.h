@@ -10,6 +10,7 @@
 class UAnimMontage;
 class AWeapon;
 class UAttributes;
+class USoundBase;
 
 UCLASS()
 class PROJECTDARK_API ABaseCharacter : public ACharacter, public IHitInterface
@@ -38,6 +39,7 @@ public:
 
 	void AddBackStabTag();
 	void RemoveBackStabTag();
+	void PlayHitShieldSound() override;
 
 protected:
 
@@ -79,6 +81,18 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	USceneComponent* BackStabLocation;
+
+	UPROPERTY(EditAnywhere, Category = Sound)
+	USoundBase* HitSound;
+
+	UPROPERTY(EditAnywhere, Category = Sound)
+	USoundBase* DeathSound;
+
+	UPROPERTY(EditAnywhere, Category = Sound)
+	USoundBase* StaggeredSound;
+
+	UPROPERTY(EditAnywhere, Category = Sound)
+	USoundBase* ShieldHitSound;
 
 private:
 

@@ -81,6 +81,7 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
 				ThisCharacter->PlayHitReactMontage(HitResult.ImpactPoint);
 				HittableActor->UseStamina(WeaponDamage / 2);
+				HittableActor->PlayHitShieldSound();
 				return;
 
 			}

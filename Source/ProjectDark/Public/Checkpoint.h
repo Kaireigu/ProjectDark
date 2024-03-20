@@ -8,6 +8,7 @@
 #include "Checkpoint.generated.h"
 
 class UCapsuleComponent;
+class USoundBase;
 
 UCLASS()
 class PROJECTDARK_API ACheckpoint : public AItem
@@ -28,6 +29,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	UCapsuleComponent* CapsuleComponent;
+
+	UPROPERTY(EditAnywhere, Category = Sound)
+	USoundBase* BonfireSound;
 
 public:
 

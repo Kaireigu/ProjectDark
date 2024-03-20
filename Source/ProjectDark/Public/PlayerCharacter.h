@@ -373,6 +373,8 @@ private:
 	UHUDOverlay* HUDOverlay;
 
 	float CurrentBossMaxHealth;
+	double ToEnemyAngle;
+
 
 public:
 	FORCEINLINE void SetOverlappingItem(AItem* Item) { OverlappingItem = Item; }

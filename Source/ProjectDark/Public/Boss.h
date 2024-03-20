@@ -7,6 +7,8 @@
 #include "Boss.generated.h"
 
 class IInteractInterface;
+class USoundBase;
+class UAudioComponent;
 /**
  * 
  */
@@ -31,6 +33,13 @@ private:
 
 	void EngageCombatTarget();
 	void Attack() override;
+
+	UPROPERTY(EditAnywhere, Category = Sound)
+	USoundBase* BossMusic;
+
+	UAudioComponent* BossAudioComponent;
+
+	bool bIsBossMusicPlaying = false;
 
 	IInteractInterface* PlayerInteractInterface;
 
