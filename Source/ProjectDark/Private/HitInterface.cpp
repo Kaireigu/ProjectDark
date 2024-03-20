@@ -43,3 +43,8 @@ FVector IHitInterface::GetFrontStabLocation()
 {
 	return FVector::ZeroVector;
 }
+
+void IHitInterface::PlayHitShieldSound()
+{
+
+}

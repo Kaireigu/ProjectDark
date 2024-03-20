@@ -30,6 +30,8 @@ void ANPC::BeginPlay()
 	EnemyState = EEnemyState::EES_Unoccupied;
 	Super::BeginPlay();
 
+	Tags.Remove(FName("Lockable"));
+
 	SphereComponent->OnComponentBeginOverlap.AddDynamic(this, &ANPC::OnSphereBeginOverlap);
 	SphereComponent->OnComponentEndOverlap.AddDynamic(this, &ANPC::OnSphereEndOverlap);
 

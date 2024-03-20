@@ -33,4 +33,5 @@ public:
 	virtual void InterfacePlayHitReact(const FVector& ImpactPoint);
 	virtual FVector GetBackStabLocation();
 	virtual FVector GetFrontStabLocation();
+	virtual void PlayHitShieldSound();
 };

@@ -5,6 +5,8 @@
 #include "Animation/AnimMontage.h"
 #include "Animation/AnimInstance.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 #include "Weapon.h"
 #include "Attributes.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -38,11 +40,21 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 void ABaseCharacter::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 {
 	PlayHitReactMontage(ImpactPoint);
+	
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
+	}
 }
 
 void ABaseCharacter::GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint)
 {
 	PlayHitReactMontage(ImpactPoint);
+
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
+	}
 }
 
 void ABaseCharacter::BeginPlay()
@@ -99,6 +111,11 @@ void ABaseCharacter::PlayStaggerMontage()
 	{
 		PlayMontage(HitReactMontage, FName("Stagger"));
 		Tags.AddUnique(FName("Staggered"));
+
+		if (StaggeredSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, StaggeredSound, GetActorLocation());
+		}
 	}
 }
 
@@ -233,6 +250,14 @@ void ABaseCharacter::RemoveBackStabTag()
 	Tags.Remove(FName("BackStabActive"));
 }
 
+void ABaseCharacter::PlayHitShieldSound()
+{
+	if (ShieldHitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ShieldHitSound, GetActorLocation());
+	}
+}
+
 double ABaseCharacter::GetTheta(const FVector& Forward, const FVector& OtherActorLocation)
 {
 	const FVector EnemyLocation = OtherActorLocation;
@@ -278,6 +303,11 @@ double ABaseCharacter::GetThetaFromActors(const AActor* ForwardVectorActor, cons
 void ABaseCharacter::Die()
 {
 	PlayMontage(DeathMontage, FName("Death1"));
+
+	if (DeathSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
+	}
 }
 
 bool ABaseCharacter::InTargetRange(AActor* Target, const double& Radius)

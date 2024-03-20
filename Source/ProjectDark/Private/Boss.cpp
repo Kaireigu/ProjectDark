@@ -11,6 +11,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "InteractInterface.h"
 #include "Attributes.h"
+#include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
 
 
 ABoss::ABoss()
@@ -25,6 +27,12 @@ void ABoss::Tick(float DeltaTime)
 	if (CombatTarget && MotionWarpingComponent)
 	{
 		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocation(FName("CombatTarget"), GetTranslationWarpTarget());
+
+		if (BossMusic && bIsBossMusicPlaying == false)
+		{
+			BossAudioComponent = UGameplayStatics::SpawnSoundAttached(BossMusic, GetRootComponent());
+			bIsBossMusicPlaying = true;
+		}
 	}
 
 }
@@ -32,6 +40,11 @@ void ABoss::Tick(float DeltaTime)
 float ABoss::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
+	}
 
 	if (PlayerInteractInterface && AttributeComponent)
 	{
@@ -75,6 +88,11 @@ void ABoss::Die()
 {
 	Super::Die();
 
+	if (BossAudioComponent)
+	{
+		BossAudioComponent->Stop();
+	}
+
 	if (PlayerInteractInterface)
 	{
 		PlayerInteractInterface->HideBossBar();
@@ -97,7 +115,7 @@ void ABoss::EngageCombatTarget()
 	if (CombatTarget)
 	{
 
-		if (InTargetRange(CombatTarget, AttackRadius) && IsFacing(CombatTarget))
+		if (InTargetRange(CombatTarget, AttackRadius))
 		{
 			Attack();
 		}

@@ -4,6 +4,7 @@
 #include "Checkpoint.h"
 #include "InteractInterface.h"
 #include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 ACheckpoint::ACheckpoint()
 {
@@ -25,6 +26,8 @@ void ACheckpoint::Tick(float DeltaTime)
 void ACheckpoint::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UGameplayStatics::PlaySoundAtLocation(this, BonfireSound, GetActorLocation());
 	
 }
 
