@@ -38,7 +38,7 @@ void AEnemy::Tick(float DeltaTime)
 
 	if (CombatTarget && MotionWarpingComponent)
 	{
-		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocation(FName("CombatTarget"), GetTranslationWarpTarget());
+		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(FName("CombatTarget"), GetTranslationWarpTarget(), GetRotationWarpTarget());
 	}
 
 }
@@ -269,6 +269,11 @@ void AEnemy::MoveToTargetLocation(const FVector& Target)
 
 void AEnemy::CheckDistanceToCombatTarget()
 {
+	if (CombatTarget && InTargetRange(CombatTarget, AttackRadius) && EnemyState != EEnemyState::EES_Strafing)
+	{
+		LastKnownLocationOfCombatTarget = CombatTarget->GetActorLocation();
+	}
+
 	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking || EnemyState == EEnemyState::EES_Strafing || EnemyState == EEnemyState::EES_Dead) { return; }
 
 	if (CombatTarget)
@@ -281,7 +286,6 @@ void AEnemy::CheckDistanceToCombatTarget()
 		}
 		else if (InTargetRange(CombatTarget, AttackRadius))
 		{
-			LastKnownLocationOfCombatTarget = CombatTarget->GetActorLocation();
 
 			int32 Selection = FMath::RandRange(0, 3);
 
@@ -489,10 +493,19 @@ FVector AEnemy::GetTranslationWarpTarget()
 {
 	if (CombatTarget == nullptr) { return FVector(); }
 
-	const FVector CombatTargetLocation = CombatTarget->GetActorLocation();
-	const FVector Location = LastKnownLocationOfCombatTarget;
+	const FVector CombatTargetLocation = LastKnownLocationOfCombatTarget;
+	const FVector Location = GetActorLocation();
 	FVector TargetToMe = (Location - CombatTargetLocation).GetSafeNormal();
 	TargetToMe *= WarpTargetDistance;
 
 	return CombatTargetLocation + TargetToMe;
+}
+
+FRotator AEnemy::GetRotationWarpTarget()
+{
+	if (CombatTarget == nullptr) { return FRotator(); }
+
+
+
+	return UKismetMathLibrary::FindLookAtRotation(GetActorLocation(), LastKnownLocationOfCombatTarget);
 }

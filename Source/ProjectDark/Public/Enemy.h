@@ -47,6 +47,7 @@ protected:
 	virtual void Die() override;
 	virtual void PlayHitReactMontage(const FVector& ImpactPoint) override;
 	FVector GetTranslationWarpTarget();
+	FRotator GetRotationWarpTarget();
 	void CheckDistanceToCombatTarget();
 	virtual void MoveToTarget(AActor* Target);
 	void MoveToTargetLocation(const FVector& Target);
