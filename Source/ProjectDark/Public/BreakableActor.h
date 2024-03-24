@@ -13,6 +13,7 @@ class UFieldSystemComponent;
 class UFieldSystemMetaDataFilter;
 class URadialFalloff;
 class URadialVector;
+class USoundBase;
 
 UCLASS()
 class PROJECTDARK_API ABreakableActor : public AActor, public IHitInterface
@@ -57,8 +58,12 @@ protected:
 	UPROPERTY(EditAnywhere)
 	URadialVector* RadialVector;
 
+	UPROPERTY(EditAnywhere, Category = Sound)
+	USoundBase* BreakSound;
+
 private:
 
+	bool bSoundBeenPlayed = false;
 
 public:	
 
