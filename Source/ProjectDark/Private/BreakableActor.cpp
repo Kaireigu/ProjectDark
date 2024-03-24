@@ -5,16 +5,12 @@
 #include "GeometryCollection/GeometryCollectionComponent.h"
 #include "Components/BoxComponent.h"
 #include "Field/FieldSystemComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 ABreakableActor::ABreakableActor()
 {
 
 	PrimaryActorTick.bCanEverTick = false;
-
-	Box = CreateDefaultSubobject<UBoxComponent>(TEXT("Box"));
-	SetRootComponent(Box);
-	Box->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
-	Box->SetGenerateOverlapEvents(false);
 
 	GeometryCollection = CreateDefaultSubobject<UGeometryCollectionComponent>(TEXT("GeometryCollection"));
 	GeometryCollection->SetupAttachment(GetRootComponent());
@@ -22,6 +18,12 @@ ABreakableActor::ABreakableActor()
 	GeometryCollection->SetGenerateOverlapEvents(true);
 	GeometryCollection->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GeometryCollection->SetNotifyBreaks(true);
+	SetRootComponent(GeometryCollection);
+
+	Box = CreateDefaultSubobject<UBoxComponent>(TEXT("Box"));
+	Box->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	Box->SetGenerateOverlapEvents(false);
+	Box->SetupAttachment(GetRootComponent());
 
 	FieldSystem = CreateDefaultSubobject<UFieldSystemComponent>(TEXT("Field System"));
 	FieldSystem->SetupAttachment(GetRootComponent());
@@ -47,7 +49,16 @@ void ABreakableActor::OnBroken(const FChaosBreakEvent& BreakEvent)
 {
 	SetLifeSpan(5.f);
 
-	Box->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	if (BreakSound && bSoundBeenPlayed == false)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, BreakSound, GetActorLocation());
+		bSoundBeenPlayed = true;
+	}
+
+	if (Box)
+	{
+		Box->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 	
 }
 

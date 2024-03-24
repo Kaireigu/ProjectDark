@@ -109,6 +109,11 @@ void ABoss::MontageEnd()
 
 void ABoss::EngageCombatTarget()
 {
+	if (CombatTarget && InTargetRange(CombatTarget, AttackRadius))
+	{
+		LastKnownLocationOfCombatTarget = CombatTarget->GetActorLocation();
+	}
+
 	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking || EnemyState == EEnemyState::EES_Strafing || EnemyState == EEnemyState::EES_Dead) { return; }
 
 

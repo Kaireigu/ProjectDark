@@ -365,6 +365,8 @@ void APlayerCharacter::InitialiseComponents()
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, OrientRotationRateYaw, 0.f); // Setting Rotation Rate so player orients quicker.
 
+	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
 	SetRootComponent(GetCapsuleComponent());
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("Camera Boom"));
@@ -375,11 +377,8 @@ void APlayerCharacter::InitialiseComponents()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(CameraBoom);
 
-	GetCapsuleComponent()->SetGenerateOverlapEvents(false);
-
 	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	//GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Destructible, ECollisionResponse::ECR_Ignore);
 
 	LockOnBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Lock On Box"));
 	LockOnBox->SetupAttachment(Camera);
@@ -946,9 +945,11 @@ void APlayerCharacter::UpdateLockOnTarget(float& DeltaTime)
 	else if (bIsLockingOn == false)
 	{
 		SetLockOffValues();
+
 		if (CurrentEnemyTargetHitInterface)
 		{
 			CurrentEnemyTargetHitInterface->BeLockedOff();
+			CurrentEnemyTargetHitInterface = nullptr;
 		}
 	}
 }
