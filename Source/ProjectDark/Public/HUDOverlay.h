@@ -33,6 +33,11 @@ public:
 	void HideDialogueTextBox();
 	void ShowDialogueTextBox();
 
+	void SetNotifyTextBox(const FString& NotifyText);
+	void ClearNotifyTextBox();
+	void HideNotifyTextBox();
+	void ShowNotifyTextBox();
+
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthProgressBar;
 
@@ -50,5 +55,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UEditableTextBox* DialogueTextBox;
+
+	UPROPERTY(meta = (BindWidget))
+	UEditableTextBox* NotifyTextBox;
 
 };

@@ -119,6 +119,24 @@ void APlayerCharacter::ClearHUDInteractText()
 	}
 }
 
+void APlayerCharacter::SetHUDNotifyText(const FString& NotifyText)
+{
+	if (HUDOverlay)
+	{
+		HUDOverlay->SetNotifyTextBox(NotifyText);
+		bCanShowNotifyText = true;
+	}
+}
+
+void APlayerCharacter::ClearHUDNotifyText()
+{
+	if (HUDOverlay)
+	{
+		HUDOverlay->ClearNotifyTextBox();
+		bCanShowNotifyText = false;
+	}
+}
+
 float APlayerCharacter::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	ReceiveDamage(DamageAmount);
@@ -595,6 +613,14 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 	if (bCanGetOnLadder || bCanGetOffLadder)
 	{
 		TurnClimbingOn();
+	}
+
+	if (bCanShowNotifyText && HUDOverlay)
+	{
+		bCanShowNotifyText = false;
+		HUDOverlay->ShowNotifyTextBox();
+		HUDOverlay->ClearInteractTextBox();
+		GetWorldTimerManager().SetTimer(ClearNotifyTimerHandle, this, &APlayerCharacter::ClearHUDNotifyText, 3.f, false);
 	}
 
 }
@@ -1304,6 +1330,7 @@ void APlayerCharacter::SetupHUD()
 				HUDOverlay->HideInteractTextBox();
 				HUDOverlay->HideDialogueTextBox();
 				HUDOverlay->HideBossBar();
+				HUDOverlay->HideNotifyTextBox();
 			}
 		}
 	}

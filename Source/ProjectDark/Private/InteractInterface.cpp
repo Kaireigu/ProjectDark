@@ -52,3 +52,23 @@ void IInteractInterface::ClearDialogueText()
 {
 
 }
+
+void IInteractInterface::SetHUDInteractText(const FString& InteractText)
+{
+
+}
+
+void IInteractInterface::ClearHUDInteractText()
+{
+
+}
+
+void IInteractInterface::SetHUDNotifyText(const FString& InteractText)
+{
+
+}
+
+void IInteractInterface::ClearHUDNotifyText()
+{
+
+}
