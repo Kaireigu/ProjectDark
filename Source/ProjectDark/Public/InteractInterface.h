@@ -33,4 +33,8 @@ public:
 	virtual void UpdateBossBar(const float& BossCurrentHealth);
 	virtual void SetDialogueText(const FString& TextToDisplay);
 	virtual void ClearDialogueText();
+	virtual void SetHUDInteractText(const FString& InteractText);
+	virtual void ClearHUDInteractText();
+	virtual void SetHUDNotifyText(const FString& NotifyText);
+	virtual void ClearHUDNotifyText();
 };

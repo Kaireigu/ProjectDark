@@ -115,3 +115,37 @@ void UHUDOverlay::ShowDialogueTextBox()
 		DialogueTextBox->SetVisibility(ESlateVisibility::Visible);
 	}
 }
+
+void UHUDOverlay::SetNotifyTextBox(const FString& NotifyText)
+{
+	if (NotifyTextBox)
+	{
+		NotifyTextBox->SetText(FText::FromString(NotifyText));
+	}
+}
+
+void UHUDOverlay::ClearNotifyTextBox()
+{
+	HideNotifyTextBox();
+
+	if (NotifyTextBox)
+	{
+		NotifyTextBox->SetText(FText::FromString(""));
+	}
+}
+
+void UHUDOverlay::HideNotifyTextBox()
+{
+	if (NotifyTextBox)
+	{
+		NotifyTextBox->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void UHUDOverlay::ShowNotifyTextBox()
+{
+	if (NotifyTextBox)
+	{
+		NotifyTextBox->SetVisibility(ESlateVisibility::Visible);
+	}
+}

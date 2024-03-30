@@ -42,8 +42,11 @@ public:
 	void SetCanGetOnLadder(const bool& CanGetOn, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder) override;
 	void SetCanGetOffLadder(const bool& CanGetOff, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder) override;
 
-	void SetHUDInteractText(const FString& InteractText);
-	void ClearHUDInteractText();
+	void SetHUDInteractText(const FString& InteractText) override;
+	void ClearHUDInteractText() override;
+
+	virtual void SetHUDNotifyText(const FString& NotifyText) override;
+	virtual void ClearHUDNotifyText() override;
 
 	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 	void PlayHitReactMontage(const FVector& ImpactPoint) override;
@@ -314,6 +317,7 @@ private:
 	bool bCanGetOffLadder = false;
 	bool bShouldDoIKTrace = true;
 	bool bCanUseDodgeBackAttack = false;
+	bool bCanShowNotifyText = false;
 
 	FVector LadderPosition;
 	FVector LadderStartPosition;
@@ -340,6 +344,7 @@ private:
 	void SetCannotBackstabOrKickOrJumpAttack();
 
 	FTimerHandle CannotBackstabTimerHandle;
+	FTimerHandle ClearNotifyTimerHandle;
 
 	UPROPERTY(VisibleInstanceOnly)
 	TArray<AActor*> LockableEnemies;
