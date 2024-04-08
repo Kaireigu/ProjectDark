@@ -30,6 +30,7 @@ public:
 	virtual void SetLadderNotInUse();
 	virtual void SetupBossBar(const FString& BossName, const float& BossMaxHealth);
 	virtual void HideBossBar();
+	virtual void ShowBossBar();
 	virtual void UpdateBossBar(const float& BossCurrentHealth);
 	virtual void SetDialogueText(const FString& TextToDisplay);
 	virtual void ClearDialogueText();

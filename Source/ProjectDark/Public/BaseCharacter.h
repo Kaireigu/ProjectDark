@@ -11,6 +11,7 @@ class UAnimMontage;
 class AWeapon;
 class UAttributes;
 class USoundBase;
+class UParticleSystem;
 
 UCLASS()
 class PROJECTDARK_API ABaseCharacter : public ACharacter, public IHitInterface
@@ -93,6 +94,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = Sound)
 	USoundBase* ShieldHitSound;
+
+	UPROPERTY(EditAnywhere, Category = VisualEffects)
+	UParticleSystem* HitParticles;
 
 private:
 

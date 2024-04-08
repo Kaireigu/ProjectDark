@@ -134,6 +134,7 @@ void APlayerCharacter::ClearHUDNotifyText()
 	{
 		HUDOverlay->ClearNotifyTextBox();
 		bCanShowNotifyText = false;
+		GetWorldTimerManager().ClearTimer(ClearNotifyTimerHandle);
 	}
 }
 
@@ -165,6 +166,14 @@ void APlayerCharacter::HideBossBar()
 	if (HUDOverlay)
 	{
 		HUDOverlay->HideBossBar();
+	}
+}
+
+void APlayerCharacter::ShowBossBar()
+{
+	if (HUDOverlay)
+	{
+		HUDOverlay->ShowBossBar();
 	}
 }
 

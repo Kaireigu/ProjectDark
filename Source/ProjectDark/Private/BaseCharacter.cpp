@@ -11,6 +11,7 @@
 #include "Attributes.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Particles/ParticleSystem.h"
 
 ABaseCharacter::ABaseCharacter()
 {
@@ -44,6 +45,11 @@ void ABaseCharacter::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 	if (HitSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
+	}
+
+	if (HitParticles)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, GetActorLocation());
 	}
 }
 

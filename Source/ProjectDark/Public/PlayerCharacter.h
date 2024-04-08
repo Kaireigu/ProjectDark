@@ -53,6 +53,7 @@ public:
 
 	void SetupBossBar(const FString& BossName, const float& BossMaxHealth) override;
 	void HideBossBar() override;
+	void ShowBossBar() override;
 	virtual void UpdateBossBar(const float& BossCurrentHealth) override;
 	void SetDialogueText(const FString& TextToDisplay) override;
 	void ClearDialogueText() override;
