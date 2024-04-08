@@ -12,7 +12,6 @@
 #include "InteractInterface.h"
 #include "Attributes.h"
 #include "Kismet/GameplayStatics.h"
-#include "Components/AudioComponent.h"
 
 
 ABoss::ABoss()
@@ -28,11 +27,6 @@ void ABoss::Tick(float DeltaTime)
 	{
 		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocation(FName("CombatTarget"), GetTranslationWarpTarget());
 
-		if (BossMusic && bIsBossMusicPlaying == false)
-		{
-			BossAudioComponent = UGameplayStatics::SpawnSoundAttached(BossMusic, GetRootComponent());
-			bIsBossMusicPlaying = true;
-		}
 	}
 
 }
@@ -87,11 +81,6 @@ void ABoss::MoveToTarget(AActor* Target)
 void ABoss::Die()
 {
 	Super::Die();
-
-	if (BossAudioComponent)
-	{
-		BossAudioComponent->Stop();
-	}
 
 	if (PlayerInteractInterface)
 	{

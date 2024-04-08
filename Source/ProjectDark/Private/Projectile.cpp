@@ -6,6 +6,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/Character.h"
+#include "Components/SphereComponent.h"
 
 AProjectile::AProjectile()
 {
@@ -87,5 +88,9 @@ void AProjectile::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 			Destroy();
 		}
 
+	}
+	else if(OtherActor->ActorHasTag(FName("Enemy")) == false)
+	{
+		Destroy();
 	}
 }

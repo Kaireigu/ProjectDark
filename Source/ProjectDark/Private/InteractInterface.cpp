@@ -38,6 +38,11 @@ void IInteractInterface::HideBossBar()
 
 }
 
+void IInteractInterface::ShowBossBar()
+{
+
+}
+
 void IInteractInterface::UpdateBossBar(const float& BossCurrentHealth)
 {
 

@@ -62,6 +62,7 @@ void AReadableMessage::OnSphereEndOverlap(UPrimitiveComponent* OverlappedCompone
 		if (PlayerInterface == nullptr) { return; }
 
 		PlayerInterface->ClearHUDInteractText();
+		PlayerInterface->ClearHUDNotifyText();
 	}
 }
 
