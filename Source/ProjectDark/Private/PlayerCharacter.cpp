@@ -152,6 +152,13 @@ void APlayerCharacter::PlayHitReactMontage(const FVector& ImpactPoint)
 	ActionState = EActionState::EAS_HitReacting;
 }
 
+void APlayerCharacter::PlayLargeHitReactMontage()
+{
+	Super::PlayLargeHitReactMontage();
+
+	ActionState = EActionState::EAS_HitReacting;
+}
+
 void APlayerCharacter::SetupBossBar(const FString& BossName, const float& BossMaxHealth)
 {
 	if (HUDOverlay)
@@ -764,7 +771,7 @@ void APlayerCharacter::SwitchLockOnTarget(const FInputActionValue& value)
 
 void APlayerCharacter::Block(const FInputActionValue& value)
 {
-	if (IsOccupied() || EquippedShield == nullptr || IsShieldEquipped() == false && IsEquippedSwordAndShield() == false) { return; }
+	if (IsOccupied() || EquippedShield == nullptr || IsShieldEquipped() == false && IsEquippedSwordAndShield() == false || ActionState == EActionState::EAS_HitReacting) { return; }
 
 	PlayMontage(BlockMontage, FName("StartBlock"));
 	ActionState = EActionState::EAS_Blocking;
@@ -773,6 +780,8 @@ void APlayerCharacter::Block(const FInputActionValue& value)
 
 void APlayerCharacter::StopBlock(const FInputActionValue& value)
 {
+	if (ActionState == EActionState::EAS_HitReacting) { return; }
+
 	if (ActionState == EActionState::EAS_Blocking && EquippedShield)
 	{
 		PlayMontage(BlockMontage, FName("StopBlock"));
@@ -1311,6 +1320,17 @@ void APlayerCharacter::UseStamina(const float& StaminaAmount)
 void APlayerCharacter::RechargeStamina()
 {
 	StartStaminaRecharge();
+}
+
+void APlayerCharacter::PlayHitShieldSound()
+{
+	Super::PlayHitShieldSound();
+
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	
+	if (PlayerController == nullptr) { return; }
+
+	PlayerController->PlayDynamicForceFeedback(100.f, 0.25f, true, false, false, true);
 }
 
 void APlayerCharacter::AddActorTags()

@@ -27,6 +27,7 @@ public:
 	void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) override;
 
 	virtual void PlayHitReactMontage(const FVector& ImpactPoint);
+	virtual void PlayLargeHitReactMontage();
 	void PlayStaggerMontage();
 	void PlayBackStab() override;
 	FVector GetBackStabLocation() override;
