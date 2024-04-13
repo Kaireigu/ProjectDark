@@ -29,6 +29,10 @@ void ABoss::Tick(float DeltaTime)
 
 	}
 
+	if (GetActorLocation().Z < SpawnPosition.Z - 1000.f)
+	{
+		Die();
+	}
 }
 
 float ABoss::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

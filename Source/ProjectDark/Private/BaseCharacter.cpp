@@ -109,6 +109,16 @@ void ABaseCharacter::PlayHitReactMontage(const FVector& ImpactPoint)
 	}
 }
 
+void ABaseCharacter::PlayLargeHitReactMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && HitReactMontage)
+	{
+		PlayMontage(HitReactMontage, FName("LargeHitBack"));
+	}
+}
+
 void ABaseCharacter::PlayStaggerMontage()
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();

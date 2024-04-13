@@ -50,6 +50,7 @@ public:
 
 	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 	void PlayHitReactMontage(const FVector& ImpactPoint) override;
+	void PlayLargeHitReactMontage() override;
 
 	void SetupBossBar(const FString& BossName, const float& BossMaxHealth) override;
 	void HideBossBar() override;
@@ -102,6 +103,8 @@ protected:
 
 	void UseStamina(const float& StaminaAmount) override;
 	void RechargeStamina() override;
+
+	void PlayHitShieldSound() override;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;

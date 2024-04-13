@@ -41,6 +41,11 @@ void AEnemy::Tick(float DeltaTime)
 		MotionWarpingComponent->AddOrUpdateWarpTargetFromLocationAndRotation(FName("CombatTarget"), GetTranslationWarpTarget(), GetRotationWarpTarget());
 	}
 
+	if (GetActorLocation().Z < SpawnPosition.Z - 1000.f && GetCharacterMovement()->IsFalling())
+	{
+		Die();
+	}
+
 }
 
 void AEnemy::UpdatePatrolTarget()
@@ -84,7 +89,6 @@ void AEnemy::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 	if (OtherActor)
 	{
 		CombatTarget = OtherActor;
-		EnemyState = EEnemyState::EES_Attacking;
 	}
 
 }
@@ -180,6 +184,8 @@ void AEnemy::BeginPlay()
 	}
 
 	EnemyController = Cast<AAIController>(GetController());
+
+	SpawnPosition = GetActorLocation();
 	
 }
 
@@ -239,7 +245,7 @@ void AEnemy::MontageEnd()
 
 void AEnemy::MoveToTarget(AActor* Target)
 {
-	if (EnemyController == nullptr || Target == nullptr || EnemyState == EEnemyState::EES_Dead || EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking || EnemyState == EEnemyState::EES_Strafing) { return; }
+	if (EnemyController == nullptr || Target == nullptr || EnemyState == EEnemyState::EES_Dead || EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Blocking || EnemyState == EEnemyState::EES_Strafing || IsEnemyHarmless) { return; }
 
 	FAIMoveRequest MoveRequest;
 	MoveRequest.SetGoalActor(Target);
@@ -357,7 +363,7 @@ void AEnemy::CheckDistanceToCombatTarget()
 
 void AEnemy::Attack()
 {
-	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead) { return; }
+	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead || IsEnemyHarmless) { return; }
 	
 
 	if (AttackMontage && EnemyEquipState == ECharacterState::ECS_Unequipped)

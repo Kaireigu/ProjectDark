@@ -79,13 +79,23 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
 				if (EnemyCharacter->IsFacing(GetOwner()) == false || EnemyCharacter && ThisCharacter == nullptr) { return; }
 
-				ThisCharacter->PlayHitReactMontage(HitResult.ImpactPoint);
-				HittableActor->UseStamina(WeaponDamage / 2);
-				HittableActor->PlayHitShieldSound();
-				return;
+				if (bIsBossWeapon)
+				{
+					EnemyCharacter->PlayLargeHitReactMontage();
+					HittableActor->UseStamina(WeaponDamage);
+					HittableActor->PlayHitShieldSound();
+					return;
+				}
+				else
+				{
+					ThisCharacter->PlayHitReactMontage(HitResult.ImpactPoint);
+					HittableActor->UseStamina(WeaponDamage / 2);
+					HittableActor->PlayHitShieldSound();
+					return;
+				}
 
 			}
-			else if (HitResult.GetActor()->ActorHasTag(FName("Parrying")))
+			else if (HitResult.GetActor()->ActorHasTag(FName("Parrying")) && bIsBossWeapon == false)
 			{
 
 				if (EnemyCharacter->IsFacing(GetOwner()) == false || EnemyCharacter && ThisCharacter == nullptr) { return; }

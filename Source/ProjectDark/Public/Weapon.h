@@ -47,6 +47,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Properties)
 	FVector HalfSize = FVector(5.f, 5.f, 5.f);
 
+	UPROPERTY(EditAnywhere, Category = Properties)
+	bool bIsBossWeapon = false;
+
 private:
 
 	UFUNCTION()

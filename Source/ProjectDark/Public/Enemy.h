@@ -171,10 +171,14 @@ protected:
 	UPROPERTY(VisibleInstanceOnly)
 	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
 
+	UPROPERTY(EditAnywhere, Category = Properties)
+	bool IsEnemyHarmless = false;
+
+	FVector SpawnPosition;
+
 private:
 
 	void InitialiseComponents();
-
 
 public:	
 	FORCEINLINE const EEnemyState& GetEnemyState() { return EnemyState; }
