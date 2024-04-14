@@ -48,6 +48,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	void PlayMontage(UAnimMontage* Montage, const FName& SectionName);
+	void StopAllMontages();
 
 	double GetTheta(const FVector& Forward, const FVector& OtherActorLocation);
 	double GetThetaFromActors(const AActor* ForwardVectorActor, const AActor* LocationActor);

@@ -34,4 +34,7 @@ public:
 	virtual FVector GetBackStabLocation();
 	virtual FVector GetFrontStabLocation();
 	virtual void PlayHitShieldSound();
+	virtual void PlayHeadHitMontage();
+	virtual void SetHitBossHeadLandPosition(const FVector& HitPosition);
+	virtual FVector GetHitInTheHeadPosition();
 };

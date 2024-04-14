@@ -9,6 +9,7 @@
 class IInteractInterface;
 class USoundBase;
 class UAudioComponent;
+class UAnimMontage;
 /**
  * 
  */
@@ -21,6 +22,7 @@ public:
 	ABoss();
 	void Tick(float DeltaTime) override;
 	float TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+	void PlayHeadHitMontage() override;
 
 protected:
 
@@ -28,6 +30,12 @@ protected:
 	void MoveToTarget(AActor* Target) override;
 	void Die() override;
 	void MontageEnd() override;
+
+	UPROPERTY(EditAnywhere, Category = Component)
+	USceneComponent* HitInHeadPosition;
+
+	UPROPERTY(EditAnywhere, Category = Montages)
+	UAnimMontage* HeadHitMontage;
 
 private:
 
@@ -37,5 +45,8 @@ private:
 	IInteractInterface* PlayerInteractInterface;
 
 	float DegreeToRotateAfterTurning;
+
+public:
+	FVector GetHitInTheHeadPosition() override;
 	
 };

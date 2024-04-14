@@ -80,6 +80,16 @@ void ABaseCharacter::PlayMontage(UAnimMontage* Montage, const FName& SectionName
 	}
 }
 
+void ABaseCharacter::StopAllMontages()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+	if (AnimInstance && AnimInstance->IsAnyMontagePlaying())
+	{
+		AnimInstance->StopAllMontages(0.1f);
+	}
+}
+
 void ABaseCharacter::PlayHitReactMontage(const FVector& ImpactPoint)
 {
 	double Theta = GetTheta(GetActorForwardVector(), ImpactPoint);

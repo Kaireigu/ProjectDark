@@ -48,3 +48,18 @@ void IHitInterface::PlayHitShieldSound()
 {
 
 }
+
+void IHitInterface::PlayHeadHitMontage()
+{
+
+}
+
+void IHitInterface::SetHitBossHeadLandPosition(const FVector& HitPosition)
+{
+
+}
+
+FVector IHitInterface::GetHitInTheHeadPosition()
+{
+	return FVector::ZeroVector;
+}

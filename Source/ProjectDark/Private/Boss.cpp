@@ -17,6 +17,9 @@
 ABoss::ABoss()
 {
 	Tags.AddUnique(FName("Boss"));
+
+	HitInHeadPosition = CreateDefaultSubobject<USceneComponent>(TEXT("Hit In Head Position"));
+	HitInHeadPosition->SetupAttachment(GetRootComponent());
 }
 
 void ABoss::Tick(float DeltaTime)
@@ -50,6 +53,38 @@ float ABoss::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, ACo
 	}
 
 	return 0.0f;
+}
+
+void ABoss::PlayHeadHitMontage()
+{
+	PlayMontage(HeadHitMontage, FName("HeadHit"));
+	UGameplayStatics::ApplyDamage(this, 120.f, GetInstigator()->GetController(), this, UDamageType::StaticClass());
+	EnemyState = EEnemyState::EES_Strafing;
+
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, HitSound, GetActorLocation());
+	}
+
+	if (HitParticles)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, GetActorLocation());
+	}
+
+	if (PlayerInteractInterface == nullptr && CombatTarget)
+	{
+		PlayerInteractInterface = Cast<IInteractInterface>(CombatTarget);
+
+		if (PlayerInteractInterface && AttributeComponent)
+		{
+			PlayerInteractInterface->SetupBossBar(FString("Asylum Demon Leygo"), AttributeComponent->GetMaxHealth());
+		}
+	}
+
+	if (PlayerInteractInterface && AttributeComponent)
+	{
+		PlayerInteractInterface->UpdateBossBar(AttributeComponent->GetHealthPercent());
+	}
 }
 
 void ABoss::BeginPlay()
@@ -154,4 +189,11 @@ void ABoss::Attack()
 		break;
 	}
 
+}
+
+FVector ABoss::GetHitInTheHeadPosition()
+{
+	if (HitInHeadPosition == nullptr) { return FVector::ZeroVector; }
+
+	return HitInHeadPosition->GetComponentLocation();
 }
