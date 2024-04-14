@@ -208,6 +208,11 @@ void APlayerCharacter::ClearDialogueText()
 	}
 }
 
+void APlayerCharacter::SetHitBossHeadLandPosition(const FVector& HitPosition)
+{
+	SetActorLocation(HitPosition);
+}
+
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -231,6 +236,8 @@ void APlayerCharacter::AttackEnd()
 	bCanUseDodgeBackAttack = false;
 	RemoveBackStabTag();
 
+	Tags.Remove(FName("FallAttackActive"));
+
 	if (CameraBoom)
 	{
 		CameraBoom->TargetArmLength = CameraBoomTargetLength;
@@ -252,6 +259,7 @@ void APlayerCharacter::SetUnoccupied()
 {
 	ActionState = EActionState::EAS_Unoccupied;
 	RemoveParryTag();
+	Tags.Remove(FName("Blocking"));
 	bCanUseDodgeBackAttack = false;
 	StartStaminaRecharge();
 
@@ -645,6 +653,15 @@ void APlayerCharacter::Attack(const FInputActionValue& value)
 {
 	if (IsUnequipped() || IsShieldEquipped() || GetStamina() < LightAttackStaminaCost || ActionState == EActionState::EAS_HitReacting) { return; }
 
+	bool bIsPlayerFalling = GetCharacterMovement()->IsFalling();
+
+	if (bIsPlayerFalling)
+	{
+		PlayMontage(AttackMontageOneHanded, FName("FallAttack"));
+		Tags.AddUnique(FName("FallAttackActive"));
+		return;
+	}
+
 	if (bCanUseDodgeBackAttack)
 	{
 		bCanUseDodgeBackAttack = false;
@@ -773,7 +790,7 @@ void APlayerCharacter::Block(const FInputActionValue& value)
 {
 	if (IsOccupied() || EquippedShield == nullptr || IsShieldEquipped() == false && IsEquippedSwordAndShield() == false || ActionState == EActionState::EAS_HitReacting) { return; }
 
-	PlayMontage(BlockMontage, FName("StartBlock"));
+	PlayMontage(BlockMontage, FName("BlockingIdle"));
 	ActionState = EActionState::EAS_Blocking;
 	Tags.AddUnique("Blocking");
 }
@@ -784,8 +801,8 @@ void APlayerCharacter::StopBlock(const FInputActionValue& value)
 
 	if (ActionState == EActionState::EAS_Blocking && EquippedShield)
 	{
-		PlayMontage(BlockMontage, FName("StopBlock"));
 		ActionState = EActionState::EAS_Unoccupied;
+		StopAllMontages();
 		Tags.Remove("Blocking");
 		RechargeStamina();
 	}

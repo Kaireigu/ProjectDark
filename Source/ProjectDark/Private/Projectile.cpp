@@ -89,8 +89,4 @@ void AProjectile::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 		}
 
 	}
-	else if(OtherActor->ActorHasTag(FName("Enemy")) == false)
-	{
-		Destroy();
-	}
 }

@@ -58,6 +58,7 @@ public:
 	virtual void UpdateBossBar(const float& BossCurrentHealth) override;
 	void SetDialogueText(const FString& TextToDisplay) override;
 	void ClearDialogueText() override;
+	void SetHitBossHeadLandPosition(const FVector& HitPosition) override;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void CreateFields(const FVector& FieldLocation);

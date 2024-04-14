@@ -112,6 +112,12 @@ void AWeapon::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 
 			UGameplayStatics::ApplyDamage(HitResult.GetActor(), WeaponDamage, GetInstigator()->GetController(), this, UDamageType::StaticClass());
 			IgnoredActors.AddUnique(HitResult.GetActor());
+
+			if (ThisCharacter->ActorHasTag(FName("FallAttackActive")))
+			{
+				EnemyCharacter->PlayHeadHitMontage();
+				ThisCharacter->SetHitBossHeadLandPosition(EnemyCharacter->GetHitInTheHeadPosition());
+			}
 		}
 	}
 
