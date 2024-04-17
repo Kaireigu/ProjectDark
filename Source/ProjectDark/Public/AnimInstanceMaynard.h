@@ -7,6 +7,7 @@
 #include "CharacterTypes.h"
 #include "AnimInstanceMaynard.generated.h"
 
+class UCharacterMovementComponent;
 
 class AEnemy;
 /**
@@ -24,9 +25,14 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	EEnemyState EnemyState = EEnemyState::EES_Patrolling;
+
+	UPROPERTY(BlueprintReadOnly)
+	float GroundSpeed;
 	
 private:
 
 	void NativeInitializeAnimation() override;
 	void NativeUpdateAnimation(float DeltaTime) override;
+
+	UCharacterMovementComponent* CharacterMovementComponent;
 };

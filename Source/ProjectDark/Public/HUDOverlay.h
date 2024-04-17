@@ -38,6 +38,11 @@ public:
 	void HideNotifyTextBox();
 	void ShowNotifyTextBox();
 
+	void SetItemUsesTextBox(const FString& NumberOfUses);
+	void ClearItemUsesTextBox();
+	void HideItemUsesTextBox();
+	void ShowItemUsesTextBox();
+
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthProgressBar;
 
@@ -58,5 +63,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UEditableTextBox* NotifyTextBox;
+
+	UPROPERTY(meta = (BindWidget))
+	UEditableTextBox* ItemUsesTextBox;
 
 };

@@ -21,8 +21,20 @@ public:
 	void SetHealthPercent(const float& Percent);
 	void HideLockOnSymbol();
 
+	void SetDamageNumberTextBox(const int32& DamageReceived);
+	void ClearDamageNumberTextBox();
+	void ShowDamageNumberTextBox();
+	void HideDamageNumberTextBox();
+	void SetClearDamageNumberTextBoxTimer();
+
+protected:
+
+	FTimerHandle ClearDamageTextBoxTimerHandle;
+
 private:
 
 	UPROPERTY()
 	UHealthBar* HealthBarWidget;
+
+	int32 DamageReceivedTotal = 0;
 };

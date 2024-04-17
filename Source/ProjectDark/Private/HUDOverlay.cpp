@@ -149,3 +149,35 @@ void UHUDOverlay::ShowNotifyTextBox()
 		NotifyTextBox->SetVisibility(ESlateVisibility::Visible);
 	}
 }
+
+void UHUDOverlay::SetItemUsesTextBox(const FString& NumberOfUses)
+{
+	if (ItemUsesTextBox)
+	{
+		ItemUsesTextBox->SetText(FText::FromString(NumberOfUses));
+	}
+}
+
+void UHUDOverlay::ClearItemUsesTextBox()
+{
+	if (ItemUsesTextBox)
+	{
+		ItemUsesTextBox->SetText(FText::FromString(""));
+	}
+}
+
+void UHUDOverlay::HideItemUsesTextBox()
+{
+	if (ItemUsesTextBox)
+	{
+		ItemUsesTextBox->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void UHUDOverlay::ShowItemUsesTextBox()
+{
+	if (ItemUsesTextBox)
+	{
+		ItemUsesTextBox->SetVisibility(ESlateVisibility::Visible);
+	}
+}

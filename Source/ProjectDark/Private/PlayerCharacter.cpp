@@ -341,7 +341,7 @@ void APlayerCharacter::DrinkPotion()
 			ReceiveHealth(EquippedPotion->GetHealAmount());
 
 			EquippedPotion->ReduceUsesByOne();
-
+			HUDOverlay->SetItemUsesTextBox(FString::FromInt(EquippedPotion->GetNumOfUses()));
 		}
 	}
 }
@@ -1377,6 +1377,7 @@ void APlayerCharacter::SetupHUD()
 				HUDOverlay->HideDialogueTextBox();
 				HUDOverlay->HideBossBar();
 				HUDOverlay->HideNotifyTextBox();
+				HUDOverlay->HideItemUsesTextBox();
 			}
 		}
 	}
@@ -1481,6 +1482,11 @@ void APlayerCharacter::PickUpPotion()
 				EquippedPotion->AttachMeshToSocket(GetMesh(), FName("HipSocket"));
 				EquippedPotion->SetOwner(this);
 				EquippedPotion->SetItemStateEquipped();
+
+				if (HUDOverlay == nullptr) { return; }
+
+				HUDOverlay->SetItemUsesTextBox(FString::FromInt(EquippedPotion->GetNumOfUses()));
+				HUDOverlay->ShowItemUsesTextBox();
 			}
 			else
 			{
