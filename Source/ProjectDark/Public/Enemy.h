@@ -54,6 +54,8 @@ protected:
 	virtual void Attack();
 	void Block();
 	void Strafe();
+	void StartAttackTimer();
+	void ClearAttackTimer();
 
 	void AddInitialTags();
 
@@ -175,6 +177,14 @@ protected:
 	bool IsEnemyHarmless = false;
 
 	FVector SpawnPosition;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	float AttackCooldown = 0.5f;
+
+	UPROPERTY(VisibleAnywhere)
+	bool bAttackCooldownFinished = true;
+
+	FTimerHandle AttackCooldownTimerHandle;
 
 private:
 

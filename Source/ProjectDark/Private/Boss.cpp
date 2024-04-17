@@ -162,9 +162,10 @@ void ABoss::EngageCombatTarget()
 
 void ABoss::Attack()
 {
-	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead || AttackMontage == nullptr) { return; }
+	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead || AttackMontage == nullptr || bAttackCooldownFinished == false) { return; }
 
 	EnemyState = EEnemyState::EES_Attacking;
+	StartAttackTimer();
 	int32 Selection = FMath::RandRange(1, 3);
 
 	switch (Selection)

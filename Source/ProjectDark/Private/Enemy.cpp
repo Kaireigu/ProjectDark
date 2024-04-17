@@ -96,6 +96,7 @@ void AEnemy::GetHit(AActor* OtherActor, const FVector& ImpactPoint)
 void AEnemy::BeLockedOnTo()
 {
 	HealthBarComponent->SetVisibility(true);
+	HealthBarComponent->HideDamageNumberTextBox();
 }
 
 void AEnemy::BeLockedOff()
@@ -120,6 +121,7 @@ float AEnemy::TakeDamage(float DamageAmount, const FDamageEvent& DamageEvent, AC
 		if (HealthBarComponent)
 		{
 			HealthBarComponent->SetHealthPercent(AttributeComponent->GetHealthPercent());
+			HealthBarComponent->SetDamageNumberTextBox(DamageAmount);
 			if (AttributeComponent->GetHealthPercent() <= 0.f)
 			{
 				Die();
@@ -183,6 +185,11 @@ void AEnemy::BeginPlay()
 		PawnSensingComponent->OnSeePawn.AddUniqueDynamic(this, &AEnemy::PawnSeen);
 	}
 
+	if (HealthBarComponent)
+	{
+		HealthBarComponent->HideDamageNumberTextBox();
+	}
+
 	EnemyController = Cast<AAIController>(GetController());
 
 	SpawnPosition = GetActorLocation();
@@ -201,6 +208,7 @@ void AEnemy::Die()
 	if (HealthBarComponent)
 	{
 		HealthBarComponent->HideLockOnSymbol();
+		HealthBarComponent->HideDamageNumberTextBox();
 	}
 
 	if (EquippedWeapon) { EquippedWeapon->Destroy(); }
@@ -363,13 +371,13 @@ void AEnemy::CheckDistanceToCombatTarget()
 
 void AEnemy::Attack()
 {
-	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead || IsEnemyHarmless) { return; }
+	if (EnemyState == EEnemyState::EES_Attacking || EnemyState == EEnemyState::EES_Dead || IsEnemyHarmless || bAttackCooldownFinished == false) { return; }
 	
 
 	if (AttackMontage && EnemyEquipState == ECharacterState::ECS_Unequipped)
 	{
 		EnemyState = EEnemyState::EES_Attacking;
-
+		StartAttackTimer();
 		PlayMontage(AttackMontage, FName("Attack1"));
 	}
 	else if (ArcherAttackMontage && EnemyEquipState == ECharacterState::ECS_EquippedLongbow)
@@ -381,13 +389,13 @@ void AEnemy::Attack()
 	else if (SwordAttackMontage && EnemyEquipState == ECharacterState::ECS_EquippedOneHanded)
 	{
 		EnemyState = EEnemyState::EES_Attacking;
-
+		StartAttackTimer();
 		PlayMontage(SwordAttackMontage, FName("Default"));
 	}
 	else if (ThrustAttackMontage && EnemyEquipState == ECharacterState::ECS_EquippedSwordAndShield)
 	{
 		EnemyState = EEnemyState::EES_Attacking;
-
+		StartAttackTimer();
 		Tags.Remove(FName("Blocking"));
 		PlayMontage(ThrustAttackMontage, FName("Default"));
 	}
@@ -447,6 +455,18 @@ void AEnemy::Strafe()
 			break;
 		}
 	}
+}
+
+void AEnemy::StartAttackTimer()
+{
+	GetWorldTimerManager().SetTimer(AttackCooldownTimerHandle, this, &AEnemy::ClearAttackTimer, AttackCooldown);
+	bAttackCooldownFinished = false;
+}
+
+void AEnemy::ClearAttackTimer()
+{
+	GetWorldTimerManager().ClearTimer(AttackCooldownTimerHandle);
+	bAttackCooldownFinished = true;
 }
 
 void AEnemy::FireArrow()

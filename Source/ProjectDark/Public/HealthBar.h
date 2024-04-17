@@ -8,6 +8,7 @@
 
 class UProgressBar;
 class UImage;
+class UEditableTextBox;
 
 /**
  * 
@@ -24,5 +25,8 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UImage* LockOnSymbol;
+
+	UPROPERTY(meta = (BindWidget))
+	UEditableTextBox* DamageNumberTextBox;
 
 };
