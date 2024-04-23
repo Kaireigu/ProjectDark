@@ -59,10 +59,10 @@ protected:
 	bool InTargetRange(const FVector& Target, const double& Radius);
 
 	UFUNCTION(BlueprintCallable)
-	void EnableWeaponCollision();
+	virtual void EnableWeaponCollision();
 
 	UFUNCTION(BlueprintCallable)
-	void DisableWeaponCollision();
+	virtual void DisableWeaponCollision();
 
 	UFUNCTION(BlueprintCallable)
 	void SetDeathValues();

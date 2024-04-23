@@ -213,6 +213,20 @@ void APlayerCharacter::SetHitBossHeadLandPosition(const FVector& HitPosition)
 	SetActorLocation(HitPosition);
 }
 
+void APlayerCharacter::SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterface* Door)
+{
+	bCanOpenDoor = CanOpenDoor;
+
+	if (bCanOpenDoor)
+	{
+		CurrentDoor = Door;
+	}
+	else
+	{
+		CurrentDoor = nullptr;
+	}
+}
+
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -267,6 +281,11 @@ void APlayerCharacter::SetUnoccupied()
 	{
 		EquippedWeapon->SetWeaponCollision(false);
 	}
+	
+	if (EquippedSecondaryWeapon)
+	{
+		EquippedSecondaryWeapon->SetWeaponCollision(false);
+	}
 }
 
 void APlayerCharacter::SetWeaponSocketOnEquipping()
@@ -285,7 +304,7 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 			CharacterState = ECharacterState::ECS_EquippedOneHanded;
 		}
 	}
-	else if (IsEquippedWithOneHandedWeapon() || IsEquippedSwordAndShield())
+	else if (IsEquippedWithOneHandedWeapon() && EquippedSecondaryWeapon == nullptr || IsEquippedSwordAndShield() && EquippedSecondaryWeapon == nullptr)
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
 
@@ -297,6 +316,17 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 		{
 			CharacterState = ECharacterState::ECS_Unequipped;
 		}
+	}
+	else if (EquippedSecondaryWeapon)
+	{
+		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
+		EquippedSecondaryWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+
+		AWeapon* MainWeapon = EquippedWeapon;
+		AWeapon* SecondaryWeapon = EquippedSecondaryWeapon;
+
+		EquippedWeapon = SecondaryWeapon;
+		EquippedSecondaryWeapon = MainWeapon;
 	}
 }
 
@@ -615,17 +645,6 @@ void APlayerCharacter::Look(const FInputActionValue& value)
 void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 {
 
-	if (CanEquip())
-	{
-		PlayMontage(EquipMontage, FName("Equip"));
-		ActionState = EActionState::EAS_Equipping; // SetUnoccupied will call from an AnimNotify
-	}
-	else if (CanUnequip())
-	{
-		PlayMontage(EquipMontage, FName("Unequip"));
-		ActionState = EActionState::EAS_Equipping;
-	}
-
 	PickUpWeapon();
 
 	PickUpShield();
@@ -637,6 +656,11 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 	if (bCanGetOnLadder || bCanGetOffLadder)
 	{
 		TurnClimbingOn();
+	}
+
+	if (bCanOpenDoor && CurrentDoor)
+	{
+		CurrentDoor->OpenDoor();
 	}
 
 	if (bCanShowNotifyText && HUDOverlay)
@@ -1414,7 +1438,6 @@ void APlayerCharacter::PickUpWeapon()
 
 			if (EquippedWeapon && EquippedWeapon->IsItemUnequipped())
 			{
-				EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
 				EquippedWeapon->SetOwner(this);
 				EquippedWeapon->SetInstigator(this);
 				EquippedWeapon->SetItemStateEquipped();
@@ -1422,10 +1445,16 @@ void APlayerCharacter::PickUpWeapon()
 				if (IsUnequipped())
 				{
 					CharacterState = ECharacterState::ECS_EquippedOneHanded;
+					EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
 				}
 				else if (IsShieldEquipped())
 				{
 					CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
+					EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+				}
+				else if (IsEquippedWithOneHandedWeapon() || IsEquippedSwordAndShield())
+				{
+					EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
 				}
 
 			}
@@ -1435,6 +1464,40 @@ void APlayerCharacter::PickUpWeapon()
 			}
 		}
 
+	}
+	else if (EquippedSecondaryWeapon == nullptr && OverlappingItem)
+	{
+		if (OverlappingItem->ActorHasTag("Weapon"))
+		{
+			EquippedSecondaryWeapon = Cast<AWeapon>(OverlappingItem);
+
+			if (EquippedSecondaryWeapon && EquippedSecondaryWeapon->IsItemUnequipped())
+			{
+				EquippedSecondaryWeapon->SetOwner(this);
+				EquippedSecondaryWeapon->SetInstigator(this);
+				EquippedSecondaryWeapon->SetItemStateEquipped();
+
+				if (IsUnequipped())
+				{
+					CharacterState = ECharacterState::ECS_EquippedOneHanded;
+					EquippedSecondaryWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+				}
+				else if (IsShieldEquipped())
+				{
+					EquippedSecondaryWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+					CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
+				}
+				else if (IsEquippedWithOneHandedWeapon() || IsEquippedSwordAndShield())
+				{
+					EquippedSecondaryWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
+				}
+
+			}
+			else
+			{
+				EquippedSecondaryWeapon = nullptr;
+			}
+		}
 	}
 }
 

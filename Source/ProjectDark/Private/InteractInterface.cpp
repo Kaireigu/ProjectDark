@@ -77,3 +77,13 @@ void IInteractInterface::ClearHUDNotifyText()
 {
 
 }
+
+void IInteractInterface::SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterface* Door)
+{
+
+}
+
+void IInteractInterface::OpenDoor()
+{
+
+}

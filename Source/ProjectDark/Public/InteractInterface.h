@@ -38,4 +38,6 @@ public:
 	virtual void ClearHUDInteractText();
 	virtual void SetHUDNotifyText(const FString& NotifyText);
 	virtual void ClearHUDNotifyText();
+	virtual void SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterface* Door);
+	virtual void OpenDoor();
 };
