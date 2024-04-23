@@ -40,7 +40,7 @@ void ANPC::BeginPlay()
 
 void ANPC::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (OtherComp->ComponentHasTag("LockOnBox")) { return; }
+	if (OtherComp->ComponentHasTag("LockOnBox") || OtherActor->ActorHasTag(FName("PlayerCharacter")) == false) { return; }
 
 	PlayerInteractInterface = Cast<IInteractInterface>(OtherActor);
 
@@ -59,6 +59,8 @@ void ANPC::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 
 void ANPC::PlayDialogue()
 {
+	if (PlayerInteractInterface == nullptr) { return; }
+
 	if (CurrentDialogue < SizeOfNPCDialogue)
 	{
 		PlayerInteractInterface->SetDialogueText(NPCDialogueText[CurrentDialogue]);

@@ -59,6 +59,7 @@ public:
 	void SetDialogueText(const FString& TextToDisplay) override;
 	void ClearDialogueText() override;
 	void SetHitBossHeadLandPosition(const FVector& HitPosition) override;
+	void SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterface* Door) override;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void CreateFields(const FVector& FieldLocation);
@@ -323,6 +324,8 @@ private:
 	bool bShouldDoIKTrace = true;
 	bool bCanUseDodgeBackAttack = false;
 	bool bCanShowNotifyText = false;
+	bool bCanOpenDoor = false;
+	bool bSwitchToSecondaryWeapon = false;
 
 	FVector LadderPosition;
 	FVector LadderStartPosition;
@@ -365,6 +368,8 @@ private:
 
 	IHitInterface* CurrentEnemyTargetHitInterface;
 
+	IInteractInterface* CurrentDoor;
+
 	UPROPERTY()
 	AEnemy* IsDeadEnemy;
 
@@ -372,6 +377,9 @@ private:
 
 	UPROPERTY(VisibleInstanceOnly)
 	AItem* OverlappingItem;
+
+	UPROPERTY(VisibleInstanceOnly)
+	AWeapon* EquippedSecondaryWeapon;
 
 	UPROPERTY(VisibleAnywhere)
 	USpringArmComponent* CameraBoom;
