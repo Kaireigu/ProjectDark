@@ -55,7 +55,7 @@ void ACheckpoint::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, A
 
 	if (InteractInterface)
 	{
-		InteractInterface->InteractWithCheckpoint();
+		InteractInterface->StopInteractionWithCheckpoint();
 	}
 
 }

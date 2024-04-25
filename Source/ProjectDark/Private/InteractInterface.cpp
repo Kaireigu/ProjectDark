@@ -10,6 +10,11 @@ void IInteractInterface::InteractWithCheckpoint()
 
 }
 
+void IInteractInterface::StopInteractionWithCheckpoint()
+{
+
+}
+
 void IInteractInterface::SetCanGetOnLadder(const bool& CanGetOn, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder)
 {
 }

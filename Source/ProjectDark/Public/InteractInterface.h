@@ -24,6 +24,7 @@ class PROJECTDARK_API IInteractInterface
 public:
 
 	virtual void InteractWithCheckpoint();
+	virtual void StopInteractionWithCheckpoint();
 	virtual void SetCanGetOnLadder(const bool& CanGetOn, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder);
 	virtual void SetCanGetOffLadder(const bool& CanGetOff, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder);
 	virtual void SetLadderInUse();
