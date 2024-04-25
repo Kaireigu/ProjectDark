@@ -60,6 +60,7 @@ public:
 	void ClearDialogueText() override;
 	void SetHitBossHeadLandPosition(const FVector& HitPosition) override;
 	void SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterface* Door) override;
+	void StopInteractionWithCheckpoint() override;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void CreateFields(const FVector& FieldLocation);
@@ -107,6 +108,7 @@ protected:
 	void RechargeStamina() override;
 
 	void PlayHitShieldSound() override;
+	void Die() override;
 
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly)
 	ECharacterState CharacterState = ECharacterState::ECS_Unequipped;
@@ -258,6 +260,9 @@ protected:
 	UPROPERTY(VisibleInstanceOnly)
 	APotion* EquippedPotion;
 
+	UPROPERTY(VisibleInstanceOnly)
+	FTransform SpawnLocation;
+
 private:
 
 	void SetDefaultControllerValues();
@@ -350,6 +355,7 @@ private:
 	void CheckCanSitAtCheckpoint();
 	void TurnClimbingOn();
 	void SetCannotBackstabOrKickOrJumpAttack();
+	void Respawn();
 
 	FTimerHandle CannotBackstabTimerHandle;
 	FTimerHandle ClearNotifyTimerHandle;

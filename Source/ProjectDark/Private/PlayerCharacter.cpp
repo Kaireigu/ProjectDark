@@ -142,6 +142,13 @@ float APlayerCharacter::TakeDamage(float DamageAmount, const FDamageEvent& Damag
 {
 	ReceiveDamage(DamageAmount);
 
+	if (AttributeComponent == nullptr) { return DamageAmount; }
+
+	if (AttributeComponent->GetHealthPercent() <= 0.f)
+	{
+		Die();
+	}
+
 	return DamageAmount;
 }
 
@@ -227,6 +234,11 @@ void APlayerCharacter::SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterfac
 	}
 }
 
+void APlayerCharacter::StopInteractionWithCheckpoint()
+{
+	bCanInteractWithCheckpoint = false;
+}
+
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -236,6 +248,8 @@ void APlayerCharacter::BeginPlay()
 	BindDelegateFunctions();
 
 	SetupHUD();
+
+	SpawnLocation = GetActorTransform();
 }
 
 void APlayerCharacter::SetCanCombo(bool CanCombo)
@@ -885,7 +899,6 @@ void APlayerCharacter::TapR1(const FInputActionValue& value)
 
 			if (CurrenyEnemyHitInterface && EquippedWeapon)
 			{
-				SetActorLocation(CurrentEnemyTargetHitInterface->GetFrontStabLocation());
 				CurrentEnemyTargetHitInterface->PlayBackStab();
 				UGameplayStatics::ApplyDamage(CurrentEnemyTarget, EquippedWeapon->GetBackStabDamage(), GetController(), this, UDamageType::StaticClass());
 			}
@@ -902,7 +915,6 @@ void APlayerCharacter::TapR1(const FInputActionValue& value)
 
 			if (CurrenyEnemyHitInterface && EquippedWeapon)
 			{
-				SetActorLocation(CurrentEnemyTargetHitInterface->GetBackStabLocation());
 				CurrentEnemyTargetHitInterface->PlayBackStab();
 				UGameplayStatics::ApplyDamage(CurrentEnemyTarget, EquippedWeapon->GetBackStabDamage(), GetController(), this, UDamageType::StaticClass());
 			}
@@ -1374,6 +1386,13 @@ void APlayerCharacter::PlayHitShieldSound()
 	PlayerController->PlayDynamicForceFeedback(100.f, 0.25f, true, false, false, true);
 }
 
+void APlayerCharacter::Die()
+{
+	Super::Die();
+
+	Respawn();
+}
+
 void APlayerCharacter::AddActorTags()
 {
 	Tags.AddUnique(FName("Hitable"));
@@ -1566,6 +1585,7 @@ void APlayerCharacter::CheckCanSitAtCheckpoint()
 		ActionState = EActionState::EAS_Interacting;
 		PlayMontage(SitMontage, FName("Default"));
 		ClearHUDInteractText();
+		SpawnLocation = GetActorTransform();
 
 		if (AttributeComponent)
 		{
@@ -1574,6 +1594,11 @@ void APlayerCharacter::CheckCanSitAtCheckpoint()
 			if (EquippedPotion)
 			{
 				EquippedPotion->ResetNumberOfUses();
+
+				if (HUDOverlay == nullptr) { return; }
+
+				HUDOverlay->SetItemUsesTextBox(FString::FromInt(EquippedPotion->GetNumOfUses()));
+				HUDOverlay->ShowItemUsesTextBox();
 			}
 		}
 
@@ -1625,6 +1650,24 @@ void APlayerCharacter::TurnClimbingOn()
 void APlayerCharacter::SetCannotBackstabOrKickOrJumpAttack()
 {
 	bCanBackStabOrKickOrJumpAttack = false;
+}
+
+void APlayerCharacter::Respawn()
+{
+	if (AttributeComponent == nullptr) { return; }
+	
+	ReceiveHealth(AttributeComponent->GetMaxHealth());
+	SetActorTransform(SpawnLocation);
+	PlayMontage(SitMontage, FName("StandingUp"));
+
+	if (EquippedPotion == nullptr) { return; }
+
+	EquippedPotion->ResetNumberOfUses();
+
+	if (HUDOverlay == nullptr) { return; }
+
+	HUDOverlay->SetItemUsesTextBox(FString::FromInt(EquippedPotion->GetNumOfUses()));
+	HUDOverlay->ShowItemUsesTextBox();
 }
 
 double APlayerCharacter::GetMovementX()
