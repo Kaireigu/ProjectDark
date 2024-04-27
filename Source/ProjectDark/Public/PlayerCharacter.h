@@ -22,6 +22,7 @@ class AEnemy;
 class UHUDOverlay;
 class AShield;
 class APotion;
+class UPauseMenu;
 
 UCLASS()
 class PROJECTDARK_API APlayerCharacter : public ABaseCharacter, public IInteractInterface
@@ -209,6 +210,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* PressedL2Action;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* PauseAction;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontageOneHanded;
 
@@ -241,6 +245,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = Components)
 	USceneComponent* EndTraceLocation;
+
+	UPROPERTY(EditAnywhere, Category = Components)
+	TSubclassOf<UPauseMenu> PauseMenuWidgetBP;
+
+	UPauseMenu* PauseMenuWidget;
 
 	UPROPERTY(EditAnywhere, Category = Camera)
 	float CameraHeightLockedOn = 80.f;
@@ -289,6 +298,7 @@ private:
 	void TapR1(const FInputActionValue& value);
 	void TapR2(const FInputActionValue& value);
 	void PressedL2(const FInputActionValue& value);
+	void PauseButtonPressed(const FInputActionValue& value);
 
 
 	UFUNCTION()
