@@ -24,6 +24,7 @@
 #include "Shield.h"
 #include "Potion.h"
 #include "Kismet/GameplayStatics.h"
+#include "PauseMenu.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -587,6 +588,11 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 		{
 			EnhancedInputComponent->BindAction(PressedL2Action, ETriggerEvent::Triggered, this, &APlayerCharacter::PressedL2);
 		}
+
+		if (PauseAction)
+		{
+			EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PauseButtonPressed);
+		}
 	}
 }
 
@@ -949,6 +955,39 @@ void APlayerCharacter::PressedL2(const FInputActionValue& value)
 
 	PlayMontage(BlockMontage, FName("Parry"));
 	ActionState = EActionState::EAS_Parrying;
+}
+
+void APlayerCharacter::PauseButtonPressed(const FInputActionValue& value)
+{
+	if (PauseMenuWidgetBP == nullptr) { return; }
+
+	if (PauseMenuWidget == nullptr)
+	{
+		PauseMenuWidget = CreateWidget<UPauseMenu>(GetWorld(), PauseMenuWidgetBP);
+	
+		if (PauseMenuWidget)
+		{
+			PauseMenuWidget->RemoveFromParent();
+		}
+	}
+
+	if (PauseMenuWidget == nullptr) { return; }
+
+	if (UGameplayStatics::IsGamePaused(GetWorld()) == false)
+	{
+		PauseMenuWidget->AddToViewport();
+		UGameplayStatics::SetGamePaused(this, true);
+
+		GEngine->AddOnScreenDebugMessage(1, 2.f, FColor::Red, FString("Game Paused"));
+
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+		if (PlayerController)
+		{
+			PlayerController->SetInputMode(FInputModeGameAndUI());
+			PlayerController->SetShowMouseCursor(true);
+		}
+	}
 }
 
 void APlayerCharacter::OnLockBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
