@@ -92,3 +92,7 @@ void IInteractInterface::OpenDoor()
 {
 
 }
+
+void IInteractInterface::DisplayVictoryAchieved()
+{
+}

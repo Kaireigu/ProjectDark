@@ -41,4 +41,5 @@ public:
 	virtual void ClearHUDNotifyText();
 	virtual void SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterface* Door);
 	virtual void OpenDoor();
+	virtual void DisplayVictoryAchieved();
 };

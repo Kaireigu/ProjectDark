@@ -24,6 +24,8 @@ void UNotificationScreen::ShowVictoryAchieved()
 	YouDiedImage->SetVisibility(ESlateVisibility::Hidden);
 	VictoryAchievedImage->SetVisibility(ESlateVisibility::Visible);
 	BonfireLitImage->SetVisibility(ESlateVisibility::Hidden);
+
+	bVictoryAchieved = true;
 }
 
 void UNotificationScreen::ShowBonfireLit()

@@ -242,6 +242,24 @@ void APlayerCharacter::StopInteractionWithCheckpoint()
 	bCanInteractWithCheckpoint = false;
 }
 
+void APlayerCharacter::DisplayVictoryAchieved()
+{
+	if (NotificationScreenWidgetBP == nullptr) { return; }
+
+	if (NotificationScreenWidget == nullptr)
+	{
+		NotificationScreenWidget = CreateWidget<UNotificationScreen>(GetWorld(), NotificationScreenWidgetBP);
+	}
+
+	if (NotificationScreenWidget == nullptr) { return; }
+
+	
+	NotificationScreenWidget->ShowVictoryAchieved();
+	NotificationScreenWidget->AddToViewport();
+	GetWorldTimerManager().SetTimer(NotifiScreenDisplayHandle, this, &APlayerCharacter::ClearNotificationScreen, NotificationScreenWidget->GetDisplayTime(), false);
+	
+}
+
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -312,6 +330,12 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 	if (IsUnequipped() || IsShieldEquipped())
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+
+		if (HUDOverlay)
+		{
+			HUDOverlay->SetDaggerVisible();
+		}
+
 		if (IsShieldEquipped())
 		{
 			CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
@@ -324,6 +348,16 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 	else if (IsEquippedWithOneHandedWeapon() && EquippedSecondaryWeapon == nullptr || IsEquippedSwordAndShield() && EquippedSecondaryWeapon == nullptr)
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
+
+		if (HUDOverlay)
+		{
+			HUDOverlay->HideDagger();
+
+			if (EquippedSecondaryWeapon)
+			{
+				HUDOverlay->SetSwordVisible();
+			}
+		}
 
 		if (IsEquippedSwordAndShield())
 		{
@@ -338,6 +372,17 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
 		EquippedSecondaryWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+
+		if (HUDOverlay && HUDOverlay->IsDaggerDisplayed())
+		{
+			HUDOverlay->HideDagger();
+			HUDOverlay->SetSwordVisible();
+		}
+		else if (HUDOverlay)
+		{
+			HUDOverlay->HideSword();
+			HUDOverlay->SetDaggerVisible();
+		}
 
 		AWeapon* MainWeapon = EquippedWeapon;
 		AWeapon* SecondaryWeapon = EquippedSecondaryWeapon;
@@ -355,6 +400,11 @@ void APlayerCharacter::SetShieldSocketOnEquipping()
 	{
 		EquippedShield->AttachMeshToSocket(GetMesh(), FName("LeftForeArmSocket"));
 
+		if (HUDOverlay)
+		{
+			HUDOverlay->SetShieldVisible();
+		}
+
 		if (IsEquippedWithOneHandedWeapon())
 		{
 			CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
@@ -367,6 +417,11 @@ void APlayerCharacter::SetShieldSocketOnEquipping()
 	else if (IsShieldEquipped() || IsEquippedSwordAndShield())
 	{
 		EquippedShield->AttachMeshToSocket(GetMesh(), FName("SpineSocket2"));
+
+		if (HUDOverlay)
+		{
+			HUDOverlay->HideShield();
+		}
 
 		if (IsEquippedSwordAndShield())
 		{
@@ -1315,12 +1370,28 @@ void APlayerCharacter::SetLockOffValues()
 
 void APlayerCharacter::ClearNotificationScreen()
 {
-	if (NotificationScreenWidget)
+	if (NotificationScreenWidgetBP == nullptr) { return; }
+
+	if (NotificationScreenWidget == nullptr)
 	{
-		NotificationScreenWidget->HideAll();
-		NotificationScreenWidget->RemoveFromParent();
+		NotificationScreenWidget = CreateWidget<UNotificationScreen>(GetWorld(), NotificationScreenWidgetBP);
+	}
+
+	if (NotificationScreenWidget == nullptr) { return; }
+
+	
+	NotificationScreenWidget->HideAll();
+	NotificationScreenWidget->RemoveFromParent();
+		
+	if (NotificationScreenWidget->IsVictoryAchieved())
+	{
+		// What to do after Game Complete maybe go to Credits.
+	}
+	else
+	{
 		Respawn();
 	}
+	
 }
 
 void APlayerCharacter::OnEnemyDeath(AActor* Enemy)
@@ -1552,6 +1623,7 @@ void APlayerCharacter::SetupHUD()
 				HUDOverlay->HideBossBar();
 				HUDOverlay->HideNotifyTextBox();
 				HUDOverlay->HideItemUsesTextBox();
+				HUDOverlay->HideAllItems();
 			}
 		}
 	}
@@ -1596,11 +1668,22 @@ void APlayerCharacter::PickUpWeapon()
 				{
 					CharacterState = ECharacterState::ECS_EquippedOneHanded;
 					EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+					
+					if (HUDOverlay)
+					{
+						HUDOverlay->SetDaggerVisible();
+					}
+
 				}
 				else if (IsShieldEquipped())
 				{
 					CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
 					EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+
+					if (HUDOverlay)
+					{
+						HUDOverlay->SetDaggerVisible();
+					}
 				}
 				else if (IsEquippedWithOneHandedWeapon() || IsEquippedSwordAndShield())
 				{
@@ -1665,6 +1748,11 @@ void APlayerCharacter::PickUpShield()
 				EquippedShield->SetOwner(this);
 				EquippedShield->SetItemStateEquipped();
 
+				if (HUDOverlay)
+				{
+					HUDOverlay->SetShieldVisible();
+				}
+
 				if (IsUnequipped())
 				{
 					CharacterState = ECharacterState::ECS_EquippedShield;
@@ -1700,6 +1788,7 @@ void APlayerCharacter::PickUpPotion()
 
 				HUDOverlay->SetItemUsesTextBox(FString::FromInt(EquippedPotion->GetNumOfUses()));
 				HUDOverlay->ShowItemUsesTextBox();
+				HUDOverlay->SetPotionVisible();
 			}
 			else
 			{

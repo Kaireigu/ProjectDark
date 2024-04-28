@@ -63,6 +63,7 @@ public:
 	void SetHitBossHeadLandPosition(const FVector& HitPosition) override;
 	void SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterface* Door) override;
 	void StopInteractionWithCheckpoint() override;
+	void DisplayVictoryAchieved() override;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void CreateFields(const FVector& FieldLocation);

@@ -43,9 +43,11 @@ protected:
 private:
 
 	bool CheckImagesValid();
+	bool bVictoryAchieved = false;
 
 public:
 
 	FORCEINLINE float& GetDisplayTime() { return DisplayTimer; }
+	FORCEINLINE bool& IsVictoryAchieved() { return bVictoryAchieved; }
 
 };

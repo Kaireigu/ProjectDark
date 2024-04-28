@@ -4,6 +4,7 @@
 #include "HUDOverlay.h"
 #include "Components/ProgressBar.h"
 #include "Components/EditableTextBox.h"
+#include "Components/Image.h"
 
 void UHUDOverlay::SetHealthBarPercent(const float& Percent, const float& MaxHealth)
 {
@@ -180,4 +181,78 @@ void UHUDOverlay::ShowItemUsesTextBox()
 	{
 		ItemUsesTextBox->SetVisibility(ESlateVisibility::Visible);
 	}
+}
+
+void UHUDOverlay::SetSwordVisible()
+{
+	if (SwordImage)
+	{
+		SwordImage->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void UHUDOverlay::SetPotionVisible()
+{
+	if (PotionImage)
+	{
+		PotionImage->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void UHUDOverlay::SetShieldVisible()
+{
+	if (ShieldImage)
+	{
+		ShieldImage->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void UHUDOverlay::SetDaggerVisible()
+{
+	if (DaggerImage)
+	{
+		DaggerImage->SetVisibility(ESlateVisibility::Visible);
+		bDaggerDisplayed = true;
+	}
+}
+
+void UHUDOverlay::HideDagger()
+{
+	if (DaggerImage)
+	{
+		DaggerImage->SetVisibility(ESlateVisibility::Hidden);
+		bDaggerDisplayed = false;
+	}
+}
+
+void UHUDOverlay::HideSword()
+{
+	if (SwordImage)
+	{
+		SwordImage->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void UHUDOverlay::HideShield()
+{
+	if (ShieldImage)
+	{
+		ShieldImage->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void UHUDOverlay::HidePotion()
+{
+	if (PotionImage)
+	{
+		PotionImage->SetVisibility(ESlateVisibility::Hidden);
+	}
+}
+
+void UHUDOverlay::HideAllItems()
+{
+	HideDagger();
+	HideSword();
+	HideShield();
+	HidePotion();
 }

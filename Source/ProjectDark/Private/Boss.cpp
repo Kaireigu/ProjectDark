@@ -12,6 +12,8 @@
 #include "InteractInterface.h"
 #include "Attributes.h"
 #include "Kismet/GameplayStatics.h"
+#include "Weapon.h"
+#include "Shield.h"
 
 
 ABoss::ABoss()
@@ -34,7 +36,15 @@ void ABoss::Tick(float DeltaTime)
 
 	if (GetActorLocation().Z < SpawnPosition.Z - 1000.f)
 	{
-		Die();
+		if (EquippedWeapon) { EquippedWeapon->Destroy(); }
+		if (EquippedShield) { EquippedShield->Destroy(); }
+
+		if (PlayerInteractInterface)
+		{
+			PlayerInteractInterface->HideBossBar();
+		}
+
+		Destroy();
 	}
 }
 
@@ -124,6 +134,7 @@ void ABoss::Die()
 	if (PlayerInteractInterface)
 	{
 		PlayerInteractInterface->HideBossBar();
+		PlayerInteractInterface->DisplayVictoryAchieved();
 	}
 }
 
