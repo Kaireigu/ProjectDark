@@ -25,6 +25,7 @@
 #include "Potion.h"
 #include "Kismet/GameplayStatics.h"
 #include "PauseMenu.h"
+#include "NotificationScreen.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -147,6 +148,7 @@ float APlayerCharacter::TakeDamage(float DamageAmount, const FDamageEvent& Damag
 
 	if (AttributeComponent->GetHealthPercent() <= 0.f)
 	{
+		if (ActionState == EActionState::EAS_Dead) { return DamageAmount; }
 		Die();
 	}
 
@@ -593,6 +595,16 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 		{
 			EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PauseButtonPressed);
 		}
+
+		if (DPadUpAction)
+		{
+			EnhancedInputComponent->BindAction(DPadUpAction, ETriggerEvent::Triggered, this, &APlayerCharacter::SelectMenuUp);
+		}
+
+		if (DPadDownAction)
+		{
+			EnhancedInputComponent->BindAction(DPadDownAction, ETriggerEvent::Triggered, this, &APlayerCharacter::SelectMenuDown);
+		}
 	}
 }
 
@@ -647,6 +659,18 @@ void APlayerCharacter::Move(const FInputActionValue& value)
 		FVector Right = FRotationMatrix(YawRotation).GetScaledAxis(EAxis::Y);
 		AddMovementInput(Right, Movement.Y);
 	}
+
+	if (UGameplayStatics::IsGamePaused(GetWorld()) && PauseMenuWidget)
+	{
+		if (Movement.X > 0)
+		{
+			PauseMenuWidget->SwitchOptionResume();
+		}
+		else if (Movement.X < 0)
+		{
+			PauseMenuWidget->SwitchOptionQuit();
+		}
+	}
 }
 
 void APlayerCharacter::Look(const FInputActionValue& value)
@@ -689,6 +713,27 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 		HUDOverlay->ShowNotifyTextBox();
 		HUDOverlay->ClearInteractTextBox();
 		GetWorldTimerManager().SetTimer(ClearNotifyTimerHandle, this, &APlayerCharacter::ClearHUDNotifyText, 3.f, false);
+	}
+
+	if (UGameplayStatics::IsGamePaused(GetWorld()) && PauseMenuWidget)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+		if (PauseMenuWidget->IsResumeButtonHighlighted())
+		{
+			UGameplayStatics::SetGamePaused(this, false);
+			PauseMenuWidget->RemoveFromParent();
+
+			if (PlayerController)
+			{
+				PlayerController->SetInputMode(FInputModeGameOnly());
+				PlayerController->SetShowMouseCursor(false);
+			}
+		}
+		else
+		{
+			UKismetSystemLibrary::QuitGame(GetWorld(), PlayerController, EQuitPreference::Quit, false);
+		}
 	}
 
 }
@@ -964,11 +1009,6 @@ void APlayerCharacter::PauseButtonPressed(const FInputActionValue& value)
 	if (PauseMenuWidget == nullptr)
 	{
 		PauseMenuWidget = CreateWidget<UPauseMenu>(GetWorld(), PauseMenuWidgetBP);
-	
-		if (PauseMenuWidget)
-		{
-			PauseMenuWidget->RemoveFromParent();
-		}
 	}
 
 	if (PauseMenuWidget == nullptr) { return; }
@@ -978,8 +1018,6 @@ void APlayerCharacter::PauseButtonPressed(const FInputActionValue& value)
 		PauseMenuWidget->AddToViewport();
 		UGameplayStatics::SetGamePaused(this, true);
 
-		GEngine->AddOnScreenDebugMessage(1, 2.f, FColor::Red, FString("Game Paused"));
-
 		APlayerController* PlayerController = Cast<APlayerController>(GetController());
 
 		if (PlayerController)
@@ -987,6 +1025,35 @@ void APlayerCharacter::PauseButtonPressed(const FInputActionValue& value)
 			PlayerController->SetInputMode(FInputModeGameAndUI());
 			PlayerController->SetShowMouseCursor(true);
 		}
+	}
+	else
+	{
+		UGameplayStatics::SetGamePaused(this, false);
+		PauseMenuWidget->RemoveFromViewport();
+
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+		if (PlayerController)
+		{
+			PlayerController->SetInputMode(FInputModeGameOnly());
+			PlayerController->SetShowMouseCursor(false);
+		}
+	}
+}
+
+void APlayerCharacter::SelectMenuUp(const FInputActionValue& value)
+{
+	if (PauseMenuWidget)
+	{
+		PauseMenuWidget->SwitchOptionResume();
+	}
+}
+
+void APlayerCharacter::SelectMenuDown(const FInputActionValue& value)
+{
+	if (PauseMenuWidget)
+	{
+		PauseMenuWidget->SwitchOptionQuit();
 	}
 }
 
@@ -1246,6 +1313,16 @@ void APlayerCharacter::SetLockOffValues()
 	IsDeadEnemy = nullptr;
 }
 
+void APlayerCharacter::ClearNotificationScreen()
+{
+	if (NotificationScreenWidget)
+	{
+		NotificationScreenWidget->HideAll();
+		NotificationScreenWidget->RemoveFromParent();
+		Respawn();
+	}
+}
+
 void APlayerCharacter::OnEnemyDeath(AActor* Enemy)
 {
 	if (CurrentEnemyTarget == Enemy)
@@ -1429,7 +1506,22 @@ void APlayerCharacter::Die()
 {
 	Super::Die();
 
-	Respawn();
+	if (NotificationScreenWidgetBP == nullptr) { return; }
+
+	if (NotificationScreenWidget == nullptr)
+	{
+		NotificationScreenWidget = CreateWidget<UNotificationScreen>(GetWorld(), NotificationScreenWidgetBP);
+	}
+
+	if (NotificationScreenWidget == nullptr) { return; }
+	
+	NotificationScreenWidget->ShowYouDied();
+	NotificationScreenWidget->AddToViewport();
+
+	ActionState = EActionState::EAS_Dead;
+
+	GetWorldTimerManager().SetTimer(NotifiScreenDisplayHandle, this, &APlayerCharacter::ClearNotificationScreen, NotificationScreenWidget->GetDisplayTime(), false);
+
 }
 
 void APlayerCharacter::AddActorTags()
