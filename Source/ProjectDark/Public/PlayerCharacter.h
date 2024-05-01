@@ -23,6 +23,7 @@ class UHUDOverlay;
 class AShield;
 class APotion;
 class UPauseMenu;
+class UNotificationScreen;
 
 UCLASS()
 class PROJECTDARK_API APlayerCharacter : public ABaseCharacter, public IInteractInterface
@@ -39,7 +40,7 @@ public:
 	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
 	void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) override;
 
-	void InteractWithCheckpoint() override;
+	void InteractWithCheckpoint(const bool& BonfireLit, IInteractInterface* Bonfire) override;
 	void SetCanGetOnLadder(const bool& CanGetOn, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder) override;
 	void SetCanGetOffLadder(const bool& CanGetOff, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder) override;
 
@@ -62,6 +63,7 @@ public:
 	void SetHitBossHeadLandPosition(const FVector& HitPosition) override;
 	void SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterface* Door) override;
 	void StopInteractionWithCheckpoint() override;
+	void DisplayVictoryAchieved() override;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void CreateFields(const FVector& FieldLocation);
@@ -119,6 +121,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly)
 	bool bCanInteractWithCheckpoint = false;
+
+	UPROPERTY(VisibleInstanceOnly)
+	bool bCanLightBonfire = false;
 
 	UPROPERTY(VisibleInstanceOnly)
 	bool bCanBackStabOrKickOrJumpAttack = false;
@@ -213,6 +218,12 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* PauseAction;
 
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* DPadUpAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* DPadDownAction;
+
 	UPROPERTY(EditDefaultsOnly, Category = Montages)
 	UAnimMontage* AttackMontageOneHanded;
 
@@ -249,7 +260,20 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Components)
 	TSubclassOf<UPauseMenu> PauseMenuWidgetBP;
 
+	UPROPERTY(EditAnywhere, Category = Components)
+	TSubclassOf<UNotificationScreen> NotificationScreenWidgetBP;
+
+	UPROPERTY(EditAnywhere, Category = Components)
+	TSubclassOf<UUserWidget> CreditsBP;
+
+	UPROPERTY()
 	UPauseMenu* PauseMenuWidget;
+
+	UPROPERTY()
+	UNotificationScreen* NotificationScreenWidget;
+
+	UPROPERTY()
+	UUserWidget* CreditsWidget;
 
 	UPROPERTY(EditAnywhere, Category = Camera)
 	float CameraHeightLockedOn = 80.f;
@@ -271,6 +295,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly)
 	FTransform SpawnLocation;
+
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float LookSensitvity = 0.75f;
 
 private:
 
@@ -299,6 +326,8 @@ private:
 	void TapR2(const FInputActionValue& value);
 	void PressedL2(const FInputActionValue& value);
 	void PauseButtonPressed(const FInputActionValue& value);
+	void SelectMenuUp(const FInputActionValue& value);
+	void SelectMenuDown(const FInputActionValue& value);
 
 
 	UFUNCTION()
@@ -314,6 +343,7 @@ private:
 	void DetermineFirstLockOnTarget();
 	void CheckLockOnTargetDistance();
 	void SetLockOffValues();
+	void ClearNotificationScreen();
 
 	UFUNCTION()
 	void OnEnemyDeath(AActor* Enemy);
@@ -369,6 +399,7 @@ private:
 
 	FTimerHandle CannotBackstabTimerHandle;
 	FTimerHandle ClearNotifyTimerHandle;
+	FTimerHandle NotifiScreenDisplayHandle;
 
 	UPROPERTY(VisibleInstanceOnly)
 	TArray<AActor*> LockableEnemies;
@@ -385,6 +416,8 @@ private:
 	IHitInterface* CurrentEnemyTargetHitInterface;
 
 	IInteractInterface* CurrentDoor;
+
+	IInteractInterface* CurrentBonfire;
 
 	UPROPERTY()
 	AEnemy* IsDeadEnemy;

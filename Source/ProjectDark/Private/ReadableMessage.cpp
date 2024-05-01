@@ -11,11 +11,11 @@ AReadableMessage::AReadableMessage()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	SetRootComponent(Mesh);
+
 	SphereComponent = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
 	SphereComponent->SetupAttachment(GetRootComponent());
-
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
-	Mesh->SetupAttachment(GetRootComponent());
 
 }
 
@@ -46,7 +46,7 @@ void AReadableMessage::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedCompo
 
 		if (PlayerInterface == nullptr) { return; }
 
-		PlayerInterface->SetHUDInteractText(FString("Read Message"));
+		PlayerInterface->SetHUDInteractText(FString("Press X: Read Message"));
 		PlayerInterface->SetHUDNotifyText(NotifyTextToDisplay);
 	}
 }

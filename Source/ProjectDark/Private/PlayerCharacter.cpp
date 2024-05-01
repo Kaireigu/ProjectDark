@@ -25,6 +25,7 @@
 #include "Potion.h"
 #include "Kismet/GameplayStatics.h"
 #include "PauseMenu.h"
+#include "NotificationScreen.h"
 
 APlayerCharacter::APlayerCharacter()
 {
@@ -74,8 +75,15 @@ void APlayerCharacter::GetHitWithDamage(const float& DamageAmount, const FVector
 }
 
 
-void APlayerCharacter::InteractWithCheckpoint()
+void APlayerCharacter::InteractWithCheckpoint(const bool& BonfireLit, IInteractInterface* Bonfire)
 {
+	if (BonfireLit == false && Bonfire)
+	{
+		bCanLightBonfire = true;
+		CurrentBonfire = Bonfire;
+		return;
+	}
+
 	if (bCanInteractWithCheckpoint)
 	{
 		bCanInteractWithCheckpoint = false;
@@ -147,6 +155,7 @@ float APlayerCharacter::TakeDamage(float DamageAmount, const FDamageEvent& Damag
 
 	if (AttributeComponent->GetHealthPercent() <= 0.f)
 	{
+		if (ActionState == EActionState::EAS_Dead) { return DamageAmount; }
 		Die();
 	}
 
@@ -238,6 +247,25 @@ void APlayerCharacter::SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterfac
 void APlayerCharacter::StopInteractionWithCheckpoint()
 {
 	bCanInteractWithCheckpoint = false;
+	bCanLightBonfire = false;
+}
+
+void APlayerCharacter::DisplayVictoryAchieved()
+{
+	if (NotificationScreenWidgetBP == nullptr) { return; }
+
+	if (NotificationScreenWidget == nullptr)
+	{
+		NotificationScreenWidget = CreateWidget<UNotificationScreen>(GetWorld(), NotificationScreenWidgetBP);
+	}
+
+	if (NotificationScreenWidget == nullptr) { return; }
+
+	
+	NotificationScreenWidget->ShowVictoryAchieved();
+	NotificationScreenWidget->AddToViewport();
+	GetWorldTimerManager().SetTimer(NotifiScreenDisplayHandle, this, &APlayerCharacter::ClearNotificationScreen, NotificationScreenWidget->GetDisplayTime(), false);
+	
 }
 
 void APlayerCharacter::BeginPlay()
@@ -251,6 +279,7 @@ void APlayerCharacter::BeginPlay()
 	SetupHUD();
 
 	SpawnLocation = GetActorTransform();
+
 }
 
 void APlayerCharacter::SetCanCombo(bool CanCombo)
@@ -310,6 +339,12 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 	if (IsUnequipped() || IsShieldEquipped())
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+
+		if (HUDOverlay)
+		{
+			HUDOverlay->SetDaggerVisible();
+		}
+
 		if (IsShieldEquipped())
 		{
 			CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
@@ -322,6 +357,16 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 	else if (IsEquippedWithOneHandedWeapon() && EquippedSecondaryWeapon == nullptr || IsEquippedSwordAndShield() && EquippedSecondaryWeapon == nullptr)
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
+
+		if (HUDOverlay)
+		{
+			HUDOverlay->HideDagger();
+
+			if (EquippedSecondaryWeapon)
+			{
+				HUDOverlay->SetSwordVisible();
+			}
+		}
 
 		if (IsEquippedSwordAndShield())
 		{
@@ -336,6 +381,17 @@ void APlayerCharacter::SetWeaponSocketOnEquipping()
 	{
 		EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("SpineSocket"));
 		EquippedSecondaryWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+
+		if (HUDOverlay && HUDOverlay->IsDaggerDisplayed())
+		{
+			HUDOverlay->HideDagger();
+			HUDOverlay->SetSwordVisible();
+		}
+		else if (HUDOverlay)
+		{
+			HUDOverlay->HideSword();
+			HUDOverlay->SetDaggerVisible();
+		}
 
 		AWeapon* MainWeapon = EquippedWeapon;
 		AWeapon* SecondaryWeapon = EquippedSecondaryWeapon;
@@ -353,6 +409,11 @@ void APlayerCharacter::SetShieldSocketOnEquipping()
 	{
 		EquippedShield->AttachMeshToSocket(GetMesh(), FName("LeftForeArmSocket"));
 
+		if (HUDOverlay)
+		{
+			HUDOverlay->SetShieldVisible();
+		}
+
 		if (IsEquippedWithOneHandedWeapon())
 		{
 			CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
@@ -365,6 +426,11 @@ void APlayerCharacter::SetShieldSocketOnEquipping()
 	else if (IsShieldEquipped() || IsEquippedSwordAndShield())
 	{
 		EquippedShield->AttachMeshToSocket(GetMesh(), FName("SpineSocket2"));
+
+		if (HUDOverlay)
+		{
+			HUDOverlay->HideShield();
+		}
 
 		if (IsEquippedSwordAndShield())
 		{
@@ -593,6 +659,16 @@ void APlayerCharacter::BindInputActions(UInputComponent* PlayerInputComponent)
 		{
 			EnhancedInputComponent->BindAction(PauseAction, ETriggerEvent::Triggered, this, &APlayerCharacter::PauseButtonPressed);
 		}
+
+		if (DPadUpAction)
+		{
+			EnhancedInputComponent->BindAction(DPadUpAction, ETriggerEvent::Triggered, this, &APlayerCharacter::SelectMenuUp);
+		}
+
+		if (DPadDownAction)
+		{
+			EnhancedInputComponent->BindAction(DPadDownAction, ETriggerEvent::Triggered, this, &APlayerCharacter::SelectMenuDown);
+		}
 	}
 }
 
@@ -647,6 +723,18 @@ void APlayerCharacter::Move(const FInputActionValue& value)
 		FVector Right = FRotationMatrix(YawRotation).GetScaledAxis(EAxis::Y);
 		AddMovementInput(Right, Movement.Y);
 	}
+
+	if (UGameplayStatics::IsGamePaused(GetWorld()) && PauseMenuWidget)
+	{
+		if (Movement.X > 0)
+		{
+			PauseMenuWidget->SwitchOptionResume();
+		}
+		else if (Movement.X < 0)
+		{
+			PauseMenuWidget->SwitchOptionQuit();
+		}
+	}
 }
 
 void APlayerCharacter::Look(const FInputActionValue& value)
@@ -657,8 +745,8 @@ void APlayerCharacter::Look(const FInputActionValue& value)
 
 	if (Controller)
 	{
-		AddControllerYawInput(LookInput.X);
-		AddControllerPitchInput(LookInput.Y);
+		AddControllerYawInput(LookInput.X * FMath::Clamp(LookSensitvity, 0.f, 1.f));
+		AddControllerPitchInput(LookInput.Y * FMath::Clamp(LookSensitvity, 0.f, 1.f));
 	}
 }
 
@@ -691,6 +779,27 @@ void APlayerCharacter::EKeyPressed(const FInputActionValue& value)
 		GetWorldTimerManager().SetTimer(ClearNotifyTimerHandle, this, &APlayerCharacter::ClearHUDNotifyText, 3.f, false);
 	}
 
+	if (UGameplayStatics::IsGamePaused(GetWorld()) && PauseMenuWidget)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+		if (PauseMenuWidget->IsResumeButtonHighlighted())
+		{
+			UGameplayStatics::SetGamePaused(this, false);
+			PauseMenuWidget->RemoveFromParent();
+
+			if (PlayerController)
+			{
+				PlayerController->SetInputMode(FInputModeGameOnly());
+				PlayerController->SetShowMouseCursor(false);
+			}
+		}
+		else
+		{
+			UKismetSystemLibrary::QuitGame(GetWorld(), PlayerController, EQuitPreference::Quit, false);
+		}
+	}
+
 }
 
 void APlayerCharacter::Attack(const FInputActionValue& value)
@@ -699,10 +808,11 @@ void APlayerCharacter::Attack(const FInputActionValue& value)
 
 	bool bIsPlayerFalling = GetCharacterMovement()->IsFalling();
 
-	if (bIsPlayerFalling)
+	if (bIsPlayerFalling && ActionState != EActionState::EAS_Attacking)
 	{
 		PlayMontage(AttackMontageOneHanded, FName("FallAttack"));
 		Tags.AddUnique(FName("FallAttackActive"));
+		ActionState = EActionState::EAS_Attacking;
 		return;
 	}
 
@@ -964,11 +1074,6 @@ void APlayerCharacter::PauseButtonPressed(const FInputActionValue& value)
 	if (PauseMenuWidget == nullptr)
 	{
 		PauseMenuWidget = CreateWidget<UPauseMenu>(GetWorld(), PauseMenuWidgetBP);
-	
-		if (PauseMenuWidget)
-		{
-			PauseMenuWidget->RemoveFromParent();
-		}
 	}
 
 	if (PauseMenuWidget == nullptr) { return; }
@@ -978,8 +1083,6 @@ void APlayerCharacter::PauseButtonPressed(const FInputActionValue& value)
 		PauseMenuWidget->AddToViewport();
 		UGameplayStatics::SetGamePaused(this, true);
 
-		GEngine->AddOnScreenDebugMessage(1, 2.f, FColor::Red, FString("Game Paused"));
-
 		APlayerController* PlayerController = Cast<APlayerController>(GetController());
 
 		if (PlayerController)
@@ -987,6 +1090,35 @@ void APlayerCharacter::PauseButtonPressed(const FInputActionValue& value)
 			PlayerController->SetInputMode(FInputModeGameAndUI());
 			PlayerController->SetShowMouseCursor(true);
 		}
+	}
+	else
+	{
+		UGameplayStatics::SetGamePaused(this, false);
+		PauseMenuWidget->RemoveFromViewport();
+
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+		if (PlayerController)
+		{
+			PlayerController->SetInputMode(FInputModeGameOnly());
+			PlayerController->SetShowMouseCursor(false);
+		}
+	}
+}
+
+void APlayerCharacter::SelectMenuUp(const FInputActionValue& value)
+{
+	if (PauseMenuWidget)
+	{
+		PauseMenuWidget->SwitchOptionResume();
+	}
+}
+
+void APlayerCharacter::SelectMenuDown(const FInputActionValue& value)
+{
+	if (PauseMenuWidget)
+	{
+		PauseMenuWidget->SwitchOptionQuit();
 	}
 }
 
@@ -1246,6 +1378,50 @@ void APlayerCharacter::SetLockOffValues()
 	IsDeadEnemy = nullptr;
 }
 
+void APlayerCharacter::ClearNotificationScreen()
+{
+	if (NotificationScreenWidgetBP == nullptr) { return; }
+
+	if (NotificationScreenWidget == nullptr)
+	{
+		NotificationScreenWidget = CreateWidget<UNotificationScreen>(GetWorld(), NotificationScreenWidgetBP);
+	}
+
+	if (NotificationScreenWidget == nullptr) { return; }
+
+		
+	if (NotificationScreenWidget->IsVictoryAchieved())
+	{
+		if (CreditsBP == nullptr) { return; }
+
+		if (CreditsWidget == nullptr)
+		{
+			CreditsWidget = CreateWidget<UUserWidget>(GetWorld(), CreditsBP);
+		}
+
+		if (CreditsWidget == nullptr) { return; }
+
+		CreditsWidget->AddToViewport();
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+		if (PlayerController)
+		{
+			UGameplayStatics::SetGamePaused(GetWorld(), true);
+			PlayerController->bShowMouseCursor = true;
+			PlayerController->bEnableClickEvents = true;
+			PlayerController->bEnableMouseOverEvents = false;
+		}
+	}
+	else if (NotificationScreenWidget->IsBonfireLit() == false)
+	{
+		Respawn();
+	}
+
+	NotificationScreenWidget->HideAll();
+	NotificationScreenWidget->RemoveFromParent();
+	
+}
+
 void APlayerCharacter::OnEnemyDeath(AActor* Enemy)
 {
 	if (CurrentEnemyTarget == Enemy)
@@ -1429,7 +1605,22 @@ void APlayerCharacter::Die()
 {
 	Super::Die();
 
-	Respawn();
+	if (NotificationScreenWidgetBP == nullptr) { return; }
+
+	if (NotificationScreenWidget == nullptr)
+	{
+		NotificationScreenWidget = CreateWidget<UNotificationScreen>(GetWorld(), NotificationScreenWidgetBP);
+	}
+
+	if (NotificationScreenWidget == nullptr) { return; }
+	
+	NotificationScreenWidget->ShowYouDied();
+	NotificationScreenWidget->AddToViewport();
+
+	ActionState = EActionState::EAS_Dead;
+
+	GetWorldTimerManager().SetTimer(NotifiScreenDisplayHandle, this, &APlayerCharacter::ClearNotificationScreen, NotificationScreenWidget->GetDisplayTime(), false);
+
 }
 
 void APlayerCharacter::AddActorTags()
@@ -1460,6 +1651,7 @@ void APlayerCharacter::SetupHUD()
 				HUDOverlay->HideBossBar();
 				HUDOverlay->HideNotifyTextBox();
 				HUDOverlay->HideItemUsesTextBox();
+				HUDOverlay->HideAllItems();
 			}
 		}
 	}
@@ -1504,11 +1696,22 @@ void APlayerCharacter::PickUpWeapon()
 				{
 					CharacterState = ECharacterState::ECS_EquippedOneHanded;
 					EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+					
+					if (HUDOverlay)
+					{
+						HUDOverlay->SetDaggerVisible();
+					}
+
 				}
 				else if (IsShieldEquipped())
 				{
 					CharacterState = ECharacterState::ECS_EquippedSwordAndShield;
 					EquippedWeapon->AttachMeshToSocket(GetMesh(), FName("RightHandSocket"));
+
+					if (HUDOverlay)
+					{
+						HUDOverlay->SetDaggerVisible();
+					}
 				}
 				else if (IsEquippedWithOneHandedWeapon() || IsEquippedSwordAndShield())
 				{
@@ -1573,6 +1776,11 @@ void APlayerCharacter::PickUpShield()
 				EquippedShield->SetOwner(this);
 				EquippedShield->SetItemStateEquipped();
 
+				if (HUDOverlay)
+				{
+					HUDOverlay->SetShieldVisible();
+				}
+
 				if (IsUnequipped())
 				{
 					CharacterState = ECharacterState::ECS_EquippedShield;
@@ -1608,6 +1816,7 @@ void APlayerCharacter::PickUpPotion()
 
 				HUDOverlay->SetItemUsesTextBox(FString::FromInt(EquippedPotion->GetNumOfUses()));
 				HUDOverlay->ShowItemUsesTextBox();
+				HUDOverlay->SetPotionVisible();
 			}
 			else
 			{
@@ -1619,6 +1828,7 @@ void APlayerCharacter::PickUpPotion()
 
 void APlayerCharacter::CheckCanSitAtCheckpoint()
 {
+
 	if (bCanInteractWithCheckpoint && ActionState != EActionState::EAS_Interacting)
 	{
 		ActionState = EActionState::EAS_Interacting;
@@ -1660,6 +1870,30 @@ void APlayerCharacter::CheckCanSitAtCheckpoint()
 		PlayMontage(SitMontage, FName("StandingUp"));
 		SetWeaponSocketOnEquipping();
 		SetShieldSocketOnEquipping();
+
+	}
+
+	if (bCanLightBonfire)
+	{
+		bCanLightBonfire = false;
+		bCanInteractWithCheckpoint = true;
+		PlayMontage(SitMontage, FName("Reaching"));
+		CurrentBonfire->LightBonfire();
+		ActionState = EActionState::EAS_Equipping;
+
+		if (NotificationScreenWidgetBP == nullptr) { return; }
+
+		if (NotificationScreenWidget == nullptr)
+		{
+			NotificationScreenWidget = CreateWidget<UNotificationScreen>(GetWorld(), NotificationScreenWidgetBP);
+		}
+
+		if (NotificationScreenWidget == nullptr) { return; }
+
+
+		NotificationScreenWidget->ShowBonfireLit();
+		NotificationScreenWidget->AddToViewport();
+		GetWorldTimerManager().SetTimer(NotifiScreenDisplayHandle, this, &APlayerCharacter::ClearNotificationScreen, NotificationScreenWidget->GetDisplayTime(), false);
 
 	}
 }

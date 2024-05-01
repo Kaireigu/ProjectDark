@@ -8,6 +8,7 @@
 
 class UProgressBar;
 class UEditableTextBox;
+class UImage;
 
 /**
  * 
@@ -43,6 +44,16 @@ public:
 	void HideItemUsesTextBox();
 	void ShowItemUsesTextBox();
 
+	void SetSwordVisible();
+	void SetPotionVisible();
+	void SetShieldVisible();
+	void SetDaggerVisible();
+	void HideDagger();
+	void HideSword();
+	void HideShield();
+	void HidePotion();
+	void HideAllItems();
+
 	UPROPERTY(meta = (BindWidget))
 	UProgressBar* HealthProgressBar;
 
@@ -66,5 +77,23 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	UEditableTextBox* ItemUsesTextBox;
+
+	UPROPERTY(meta = (BindWidget))
+	UImage* SwordImage;
+
+	UPROPERTY(meta = (BindWidget))
+	UImage* PotionImage;
+
+	UPROPERTY(meta = (BindWidget))
+	UImage* ShieldImage;
+
+	UPROPERTY(meta = (BindWidget))
+	UImage* DaggerImage;
+
+	bool bDaggerDisplayed = false;
+
+public:
+
+	FORCEINLINE bool& IsDaggerDisplayed() { return bDaggerDisplayed; }
 
 };

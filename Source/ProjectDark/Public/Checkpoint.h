@@ -5,13 +5,15 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Item.h"
+#include "InteractInterface.h"
 #include "Checkpoint.generated.h"
 
 class UCapsuleComponent;
 class USoundBase;
+class UCascadeParticleSystemComponent;
 
 UCLASS()
-class PROJECTDARK_API ACheckpoint : public AItem
+class PROJECTDARK_API ACheckpoint : public AItem, public IInteractInterface
 {
 	GENERATED_BODY()
 	
@@ -19,6 +21,8 @@ public:
 
 	ACheckpoint();
 	virtual void Tick(float DeltaTime) override;
+
+	void LightBonfire() override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -32,6 +36,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = Sound)
 	USoundBase* BonfireSound;
+
+	UPROPERTY(EditAnywhere, Category = VFX)
+	UParticleSystem* FireVFX;
+
+private:
+
+	bool bBonfireLit = false;
 
 public:
 
