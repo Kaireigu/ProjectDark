@@ -2,9 +2,9 @@
 
 
 #include "Checkpoint.h"
-#include "InteractInterface.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "CascadeParticleSystemComponent.h"
 
 ACheckpoint::ACheckpoint()
 {
@@ -15,6 +15,7 @@ ACheckpoint::ACheckpoint()
 	CapsuleComponent->SetupAttachment(GetRootComponent());
 	CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 	CapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+
 }
 
 void ACheckpoint::Tick(float DeltaTime)
@@ -23,11 +24,20 @@ void ACheckpoint::Tick(float DeltaTime)
 
 }
 
+void ACheckpoint::LightBonfire()
+{
+	bBonfireLit = true;
+	if (FireVFX && BonfireSound)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), FireVFX, GetActorLocation());
+		UGameplayStatics::PlaySoundAtLocation(this, BonfireSound, GetActorLocation());
+	}
+	InteractText = FString("Rest At Bonfire");
+}
+
 void ACheckpoint::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UGameplayStatics::PlaySoundAtLocation(this, BonfireSound, GetActorLocation());
 	
 }
 
@@ -41,7 +51,7 @@ void ACheckpoint::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent,
 
 	if (InteractInterface)
 	{
-		InteractInterface->InteractWithCheckpoint();
+		InteractInterface->InteractWithCheckpoint(bBonfireLit, this);
 	}
 }
 

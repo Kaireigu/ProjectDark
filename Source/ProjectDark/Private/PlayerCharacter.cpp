@@ -75,8 +75,15 @@ void APlayerCharacter::GetHitWithDamage(const float& DamageAmount, const FVector
 }
 
 
-void APlayerCharacter::InteractWithCheckpoint()
+void APlayerCharacter::InteractWithCheckpoint(const bool& BonfireLit, IInteractInterface* Bonfire)
 {
+	if (BonfireLit == false && Bonfire)
+	{
+		bCanLightBonfire = true;
+		CurrentBonfire = Bonfire;
+		return;
+	}
+
 	if (bCanInteractWithCheckpoint)
 	{
 		bCanInteractWithCheckpoint = false;
@@ -240,6 +247,7 @@ void APlayerCharacter::SetCanOpenDoor(const bool& CanOpenDoor, IInteractInterfac
 void APlayerCharacter::StopInteractionWithCheckpoint()
 {
 	bCanInteractWithCheckpoint = false;
+	bCanLightBonfire = false;
 }
 
 void APlayerCharacter::DisplayVictoryAchieved()
@@ -271,6 +279,7 @@ void APlayerCharacter::BeginPlay()
 	SetupHUD();
 
 	SpawnLocation = GetActorTransform();
+
 }
 
 void APlayerCharacter::SetCanCombo(bool CanCombo)
@@ -736,8 +745,8 @@ void APlayerCharacter::Look(const FInputActionValue& value)
 
 	if (Controller)
 	{
-		AddControllerYawInput(LookInput.X);
-		AddControllerPitchInput(LookInput.Y);
+		AddControllerYawInput(LookInput.X * FMath::Clamp(LookSensitvity, 0.f, 1.f));
+		AddControllerPitchInput(LookInput.Y * FMath::Clamp(LookSensitvity, 0.f, 1.f));
 	}
 }
 
@@ -799,10 +808,11 @@ void APlayerCharacter::Attack(const FInputActionValue& value)
 
 	bool bIsPlayerFalling = GetCharacterMovement()->IsFalling();
 
-	if (bIsPlayerFalling)
+	if (bIsPlayerFalling && ActionState != EActionState::EAS_Attacking)
 	{
 		PlayMontage(AttackMontageOneHanded, FName("FallAttack"));
 		Tags.AddUnique(FName("FallAttackActive"));
+		ActionState = EActionState::EAS_Attacking;
 		return;
 	}
 
@@ -1379,18 +1389,36 @@ void APlayerCharacter::ClearNotificationScreen()
 
 	if (NotificationScreenWidget == nullptr) { return; }
 
-	
-	NotificationScreenWidget->HideAll();
-	NotificationScreenWidget->RemoveFromParent();
 		
 	if (NotificationScreenWidget->IsVictoryAchieved())
 	{
-		// What to do after Game Complete maybe go to Credits.
+		if (CreditsBP == nullptr) { return; }
+
+		if (CreditsWidget == nullptr)
+		{
+			CreditsWidget = CreateWidget<UUserWidget>(GetWorld(), CreditsBP);
+		}
+
+		if (CreditsWidget == nullptr) { return; }
+
+		CreditsWidget->AddToViewport();
+		APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+		if (PlayerController)
+		{
+			UGameplayStatics::SetGamePaused(GetWorld(), true);
+			PlayerController->bShowMouseCursor = true;
+			PlayerController->bEnableClickEvents = true;
+			PlayerController->bEnableMouseOverEvents = false;
+		}
 	}
-	else
+	else if (NotificationScreenWidget->IsBonfireLit() == false)
 	{
 		Respawn();
 	}
+
+	NotificationScreenWidget->HideAll();
+	NotificationScreenWidget->RemoveFromParent();
 	
 }
 
@@ -1800,6 +1828,7 @@ void APlayerCharacter::PickUpPotion()
 
 void APlayerCharacter::CheckCanSitAtCheckpoint()
 {
+
 	if (bCanInteractWithCheckpoint && ActionState != EActionState::EAS_Interacting)
 	{
 		ActionState = EActionState::EAS_Interacting;
@@ -1841,6 +1870,30 @@ void APlayerCharacter::CheckCanSitAtCheckpoint()
 		PlayMontage(SitMontage, FName("StandingUp"));
 		SetWeaponSocketOnEquipping();
 		SetShieldSocketOnEquipping();
+
+	}
+
+	if (bCanLightBonfire)
+	{
+		bCanLightBonfire = false;
+		bCanInteractWithCheckpoint = true;
+		PlayMontage(SitMontage, FName("Reaching"));
+		CurrentBonfire->LightBonfire();
+		ActionState = EActionState::EAS_Equipping;
+
+		if (NotificationScreenWidgetBP == nullptr) { return; }
+
+		if (NotificationScreenWidget == nullptr)
+		{
+			NotificationScreenWidget = CreateWidget<UNotificationScreen>(GetWorld(), NotificationScreenWidgetBP);
+		}
+
+		if (NotificationScreenWidget == nullptr) { return; }
+
+
+		NotificationScreenWidget->ShowBonfireLit();
+		NotificationScreenWidget->AddToViewport();
+		GetWorldTimerManager().SetTimer(NotifiScreenDisplayHandle, this, &APlayerCharacter::ClearNotificationScreen, NotificationScreenWidget->GetDisplayTime(), false);
 
 	}
 }

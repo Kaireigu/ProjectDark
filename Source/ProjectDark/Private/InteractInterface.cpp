@@ -5,7 +5,12 @@
 
 // Add default functionality here for any IInteractInterface functions that are not pure virtual.
 
-void IInteractInterface::InteractWithCheckpoint()
+void IInteractInterface::InteractWithCheckpoint(const bool& BonfireLit, IInteractInterface* Bonfire)
+{
+
+}
+
+void IInteractInterface::LightBonfire()
 {
 
 }

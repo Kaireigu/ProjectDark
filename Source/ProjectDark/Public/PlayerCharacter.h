@@ -40,7 +40,7 @@ public:
 	void GetHit(AActor* OtherActor, const FVector& ImpactPoint) override;
 	void GetHitWithDamage(const float& DamageAmount, const FVector& ImpactPoint) override;
 
-	void InteractWithCheckpoint() override;
+	void InteractWithCheckpoint(const bool& BonfireLit, IInteractInterface* Bonfire) override;
 	void SetCanGetOnLadder(const bool& CanGetOn, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder) override;
 	void SetCanGetOffLadder(const bool& CanGetOff, const FVector& LadderLocation, const FVector& StartPosition, const FRotator& StartRotation, IInteractInterface* Ladder) override;
 
@@ -121,6 +121,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly)
 	bool bCanInteractWithCheckpoint = false;
+
+	UPROPERTY(VisibleInstanceOnly)
+	bool bCanLightBonfire = false;
 
 	UPROPERTY(VisibleInstanceOnly)
 	bool bCanBackStabOrKickOrJumpAttack = false;
@@ -260,11 +263,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category = Components)
 	TSubclassOf<UNotificationScreen> NotificationScreenWidgetBP;
 
+	UPROPERTY(EditAnywhere, Category = Components)
+	TSubclassOf<UUserWidget> CreditsBP;
+
 	UPROPERTY()
 	UPauseMenu* PauseMenuWidget;
 
 	UPROPERTY()
 	UNotificationScreen* NotificationScreenWidget;
+
+	UPROPERTY()
+	UUserWidget* CreditsWidget;
 
 	UPROPERTY(EditAnywhere, Category = Camera)
 	float CameraHeightLockedOn = 80.f;
@@ -286,6 +295,9 @@ protected:
 
 	UPROPERTY(VisibleInstanceOnly)
 	FTransform SpawnLocation;
+
+	UPROPERTY(EditAnywhere, Category = Movement)
+	float LookSensitvity = 0.75f;
 
 private:
 
@@ -404,6 +416,8 @@ private:
 	IHitInterface* CurrentEnemyTargetHitInterface;
 
 	IInteractInterface* CurrentDoor;
+
+	IInteractInterface* CurrentBonfire;
 
 	UPROPERTY()
 	AEnemy* IsDeadEnemy;

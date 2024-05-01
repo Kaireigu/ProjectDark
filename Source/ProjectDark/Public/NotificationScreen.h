@@ -44,10 +44,12 @@ private:
 
 	bool CheckImagesValid();
 	bool bVictoryAchieved = false;
+	bool bBonfireLit = false;
 
 public:
 
 	FORCEINLINE float& GetDisplayTime() { return DisplayTimer; }
 	FORCEINLINE bool& IsVictoryAchieved() { return bVictoryAchieved; }
+	FORCEINLINE bool& IsBonfireLit() { return bBonfireLit; }
 
 };

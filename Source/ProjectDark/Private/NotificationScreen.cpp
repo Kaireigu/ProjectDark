@@ -37,6 +37,8 @@ void UNotificationScreen::ShowBonfireLit()
 	YouDiedImage->SetVisibility(ESlateVisibility::Hidden);
 	VictoryAchievedImage->SetVisibility(ESlateVisibility::Hidden);
 	BonfireLitImage->SetVisibility(ESlateVisibility::Visible);
+
+	bBonfireLit = true;
 }
 
 void UNotificationScreen::HideAll()
@@ -48,6 +50,8 @@ void UNotificationScreen::HideAll()
 	YouDiedImage->SetVisibility(ESlateVisibility::Hidden);
 	VictoryAchievedImage->SetVisibility(ESlateVisibility::Hidden);
 	BonfireLitImage->SetVisibility(ESlateVisibility::Hidden);
+
+	bBonfireLit = false;
 }
 
 bool UNotificationScreen::CheckImagesValid()

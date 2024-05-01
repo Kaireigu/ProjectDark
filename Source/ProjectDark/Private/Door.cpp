@@ -103,5 +103,10 @@ void ADoor::OnBackBoxEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor
 {
 	if (OtherComp->ComponentHasTag("LockOnBox") || OtherActor == nullptr) { return; }
 
+	if (PlayerInteractInterface)
+	{
+		PlayerInteractInterface->SetCanOpenDoor(false, this);
+	}
+
 }
 
